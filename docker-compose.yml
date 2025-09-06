@@ -6,4 +6,4 @@ services:
       dockerfile: Dockerfile
     image: ksprt:latest
     ports:
-      - "6969:6969"
+      - 127.0.0.1:6969:6969

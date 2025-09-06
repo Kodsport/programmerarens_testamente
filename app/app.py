@@ -19,7 +19,7 @@ logfilepath = os.path.join('user', 'logfile.log')
 def print(*msg):
 	with open(logfilepath, 'a') as outfile:
 		# outfile.write(f'{msg}\n')
-		outfile.write(f'{" ".join(msg)}\n')
+		outfile.write(f'{" ".join(map(str, *msg))}\n')
 
 if os.path.exists(statefilePath):
 	with open(statefilePath) as statefile:

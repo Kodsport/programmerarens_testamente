@@ -25,9 +25,8 @@
 <body>
     <h1 style="text-align: center;">Välj ditt lag:</h1>
     <div class="center">
-        {%for i in range(0, len)%}
-        <button onclick="document.cookie='team={{ teams[i] }};path=/;max-age=86400'">{{ teams[i] }}</button>
-        <br>
+        {%for team in teams%}
+        <button onclick="document.cookie='team={{ team }};path=/;max-age=86400'; history.back()">{{ team }}</button>
         {%endfor%}
     </div>
 </body>

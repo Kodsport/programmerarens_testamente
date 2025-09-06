@@ -19,14 +19,18 @@ if os.path.exists(statefilePath):
 		STATE = json.loads(statefile.read())
 else:
 	STATE = {
-		'team-a': 1
+		'team-int': 0,
+		'team-float': 0,
+		'team-str': 0,
+		'team-bool': 0,
+		'team-None': 0,
 	}
 
 def storeState():
 	global STATE
 
 	with open(statefilePath, 'w') as statefile:
-		STATE = json.loads(statefile.read())
+		STATE = json.dumps(statefile.read(), indent=4)
 
 @app.route('/')
 def hello():
@@ -37,14 +41,33 @@ def hello():
 
 @app.route('/login')
 def login():
-	return render_template('login.html', len = len(teams), teams = teams)
+	print(teams, teams.keys())
+	return render_template('login.html', len = len(teams), teams = list(teams.keys()))
 
 @app.route('/qr')
 def qr():
 	id = request.args.get('id')
+	team = request.cookies.get('team')
+	if not team in teams: return redirect('/login')
 	if not id or id not in uuids: return abort(400, 'Invalid ID')
-	print(f'{id=}')
-	return render_template('problem.html', uuid=uuids[id])
+	print(f'{id=}, {team=}')
+
+	if teams[team][STATE[f'team-{team}']] == id:
+		STATE[f'team-{team}'] += 1
+		storeState()
+
+	problem = problems[STATE[f'team-{team}']]
+
+	print(f'{problem=}')
+	problemModule = importlib.import_module(f'problem.{problems[problems.index(problem)]}', package=None)
+	if getattr(problemModule, 'generateFile', None):
+		return render_template('problem.html', filename=problem)
+	elif getattr(problemModule, 'generateText', None):
+		return render_template('problem.html', text=problemModule.generateText('heje'))
+	elif getattr(problemModule, 'generateImage', None):
+		return render_template('problem.html', image='image')
+	else:
+		return abort(500, 'Invalid problem')
 
 @app.route('/problem')
 def problem():

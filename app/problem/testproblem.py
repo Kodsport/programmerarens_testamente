@@ -1,6 +1,6 @@
-import mall
+import template
 
 def minFunk(indata):
     print(f'hej {indata}')
 
-mall.kollaOmRätt(minFunk)
+template.kollaOmRätt(minFunk)

@@ -1,13 +1,16 @@
 from uuids import uuids
 
-from flask import Flask, render_template, abort, request
+from flask import Flask, render_template, abort, request, redirect, url_for
 app = Flask(__name__)
 
 teams = ["a", "b", "c"]
 
 @app.route('/')
 def hello():
-	return "Hello World!"
+	if 'team' not in request.cookies:
+		return redirect(url_for('login'), code=307)
+	else:
+		return render_template('index.html')
 
 @app.route('/login')
 def login():

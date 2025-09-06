@@ -1,6 +1,7 @@
 def generateFile(flag: str):
     import base64
-    return f'''import base64
+    return f'''Du får ett tal som indata och din uppgift är att beräkna siffersumman av detta tal!
+import base64
 sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
 
 def kollaOmRätt(funktion):

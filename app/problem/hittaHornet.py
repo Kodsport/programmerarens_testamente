@@ -1,6 +1,9 @@
 def generateFile(flag: str):
     import base64
-    return f'''import base64
+    return f'''Du får tre hörn av en rektangel och du vill hitta det sista hörnet. indata är en lista bestående av tre listor med två koordinater i varje:
+en x-koordinat och en y-koordinat. Alltså typ [[0,0], [1,0], [0,1]] och då ska du skriva ut print(1,1)
+    
+import base64
 sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
 
 def kollaOmRätt(funktion):

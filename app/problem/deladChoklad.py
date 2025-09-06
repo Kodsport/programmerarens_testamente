@@ -1,6 +1,10 @@
 def generateFile(flag: str):
     import base64
-    return f'''import base64
+    return f'''Problem: Du vill ge choklad till dina vänner, men du vill inte att det blir orättvist så du ska dela ut chokladbitarna så att
+alla får lika många och sedan äter du resten. Du ska nu räkna ut hur mycket godis du får! indata är en lista där indata[0] är
+choklad ni får och indata[1] är mängden vänner du har. print:a hur mycket godis du får
+
+import base64
 sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
 
 def kollaOmRätt(funktion):

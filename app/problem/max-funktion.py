@@ -1,6 +1,7 @@
 def generateFile(flag: str):
     import base64
-    return f'''import base64
+    return f'''indata är en lista bestående av siffror, skriv det största!
+import base64
 sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
 
 def kollaOmRätt(funktion):

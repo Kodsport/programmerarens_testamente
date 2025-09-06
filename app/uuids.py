@@ -1,12 +1,8 @@
 uuids = {
-    '81918198-9c6b-4bb4-9b7c-fa16e259071a': 'Plats 1',
     '3b654858-81d5-44a6-b137-2296fcdd4645': 'KS1', #FL64
-    '80efecce-0fec-4300-a217-92b64ed827eb': 'FL52',
+    '80efecce-0fec-4300-a217-92b64ed827eb': 'FL52', # VASAA
     '0be8862a-63ca-4a1f-b895-7c7468443e19': 'KC',
-    '69382a92-68fc-4485-91f1-d796b935211f': 'Plats 5',
-    '5ad985ad-34fa-4311-91a1-1dc6d17f7576': 'Plats 6',
     '4c4903ab-259e-4c2f-a913-9daf43e6d6fb': 'VASAG12',
-    'f5649182-f813-4200-a928-225ff00465dd': 'Plats 8',
     'ade01481-dfae-4e8d-95fc-adebdd9e27df': 'FT7204',
     'f657c8ba-22a1-47de-9f53-3ffa6f64ea98': 'PJ',
     '3e5e6f21-7053-40e9-96f8-70165ae192b2': 'VASA2210',

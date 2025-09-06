@@ -14,6 +14,13 @@ statefilePath = os.path.join(basedir, 'user', 'statefile.json')
 
 print('Problems', problems)
 
+logfilepath = os.path.join('user', 'logfile.log')
+
+def print(msg):
+	with open(logfilepath, 'a') as outfile:
+		outfile.write(f'{msg}\n')
+		# outfile.write(f'{" ".join(msg)}\n')
+
 if os.path.exists(statefilePath):
 	with open(statefilePath) as statefile:
 		STATE = json.loads(statefile.read())
@@ -50,22 +57,26 @@ def qr():
 	team = request.cookies.get('team')
 	if not team in teams: return redirect('/login')
 	if not id or id not in uuids: return abort(400, 'Invalid ID')
-	print(f'{id=}, {team=}')
+	print(f'{id=}, {team=}, {teams[team][STATE[f"team-{team}"]]=}')
 
 	if teams[team][STATE[f'team-{team}']] == id:
 		STATE[f'team-{team}'] += 1
 		storeState()
+	if STATE[f'team-{team}'] > 0 and teams[team][STATE[f'team-{team}']-1] == id:
+		pass
 	else:
 		return abort(401, 'Fel QR')
 
 	problem = problems[STATE[f'team-{team}']]
+
+	flag = uuids[teams[team][STATE[f'team-{team}']]]
 
 	print(f'{problem=}')
 	problemModule = importlib.import_module(f'problem.{problems[problems.index(problem)]}', package=None)
 	if getattr(problemModule, 'generateFile', None):
 		return render_template('problem.html', text=problemModule.generateFile(problems[STATE[f'team-{team}']]))
 	elif getattr(problemModule, 'generateText', None):
-		return render_template('problem.html', text=problemModule.generateText('heje'))
+		return render_template('problem.html', text=problemModule.generateText(flag))
 	elif getattr(problemModule, 'generateImage', None):
 		return render_template('problem.html', image='image')
 	else:
@@ -75,12 +86,15 @@ def qr():
 def problem():
 	problem = request.args.get('problem')
 	if not problem or problem not in problems: abort(400, 'Invalid ID')
+	id = request.args.get('id')
+	if not id or id not in uuids: return abort(400, 'Invalid ID')
+	flag = uuids[id]
 	print(f'{problem=}')
 	problemModule = importlib.import_module(f'problem.{problems[problems.index(problem)]}', package=None)
 	if getattr(problemModule, 'generateFile', None):
 		return render_template('problem.html', filename=problem)
 	elif getattr(problemModule, 'generateText', None):
-		return render_template('problem.html', text=problemModule.generateText('heje'))
+		return render_template('problem.html', text=problemModule.generateText(flag))
 	elif getattr(problemModule, 'generateImage', None):
 		return render_template('problem.html', image='image')
 	else:

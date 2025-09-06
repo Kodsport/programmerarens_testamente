@@ -1,5 +1,7 @@
-import base64
-sal = base64.b64decode(b'{{{{rumsnummer}}}}').decode()
+def generateFile(flag: str):
+    import base64
+    return f'''import base64
+sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
 
 def kollaOmRätt(funktion):
     from io import StringIO 
@@ -19,7 +21,31 @@ def kollaOmRätt(funktion):
         with Capturing() as output:
             funktion('python')
         if output != ['hej python']:
-            print(f'Tyvärr! {output}')
+            print(f'Tyvärr! {{output}}')
             break
     else:
-        print(f'Sal {sal}')
+        print(f'Sal {{sal}}')
+'''.replace('{{{{rumsnummer}}}}', flag)
+
+################################################################################
+
+if __name__ == '__main__':
+    import importlib.util
+    import sys
+
+    module_name = 'template'
+    spec = importlib.util.spec_from_loader(module_name, loader=None)
+    template = importlib.util.module_from_spec(spec)
+
+    exec(generateFile('rumsnummer'), template.__dict__)
+
+    sys.modules[module_name] = template
+
+################################################################################
+
+    import template
+
+    def minFunk(indata):
+        print(f'hej {indata}')
+
+    template.kollaOmRätt(minFunk)

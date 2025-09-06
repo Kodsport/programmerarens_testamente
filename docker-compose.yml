@@ -1,0 +1,9 @@
+services:
+  ksprt:
+    container_name: ksprt
+    build:
+      context: app
+      dockerfile: Dockerfile
+    image: ksprt:latest
+    ports:
+      - "6969:6969"

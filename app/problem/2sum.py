@@ -25,10 +25,6 @@ def kollaOmRätt(funktion):
         with Capturing() as output:
             funktion([ls, target])
         i,j = map(int,output[0].split())
-        print(ls)
-        print(target)
-        print(i,j)
-        break
         if ls[i]+ls[j] != target:
             print(f'Tyvärr! Ni svarade position {{i}} och {{j}} vilket motsvarar {{ls[i]}}+{{ls[j]}}={{ls[i]+ls[j]}}')
             break

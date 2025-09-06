@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Välj lag</title>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css')}}) layer(toolstyle);
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;;
+        }
+        button {
+            font-size: 30px;
+            padding: 16px 64px;
+            border-radius: 10px;
+            width: 100%;
+            border-color: #444444;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align: center;">Välj ditt lag:</h1>
+    <div class="center">
+        {%for i in range(0, len)%}
+        <button onclick="document.cookie='team={{ teams[i] }};path=/;max-age=86400'">{{ teams[i] }}</button>
+        <br>
+        {%endfor%}
+    </div>
+</body>
+
+</html>

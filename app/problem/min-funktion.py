@@ -48,6 +48,10 @@ if __name__ == '__main__':
     import template
 
     def minFunk(indata):
-        print(f'hej {indata}')
+        m = 10**12
+        for i in range(len(indata)):
+            if indata[i] < m:
+                m = indata[i]
+        print(m)
 
     template.kollaOmRätt(minFunk)

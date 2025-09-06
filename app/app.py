@@ -19,7 +19,13 @@ logfilepath = os.path.join('user', 'logfile.log')
 def print(*msg):
 	with open(logfilepath, 'a') as outfile:
 		# outfile.write(f'{msg}\n')
-		outfile.write(f'{" ".join(map(str, *msg))}\n')
+		try:
+			outfile.write(f'{" ".join(map(str, *msg))}\n')
+		except:
+			try:
+				outfile.write(json.dumps(msg, indent=4))
+			except:
+				pass
 
 if os.path.exists(statefilePath):
 	with open(statefilePath) as statefile:

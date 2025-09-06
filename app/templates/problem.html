@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Välkommen</title>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
+
+        p.text {
+            white-space: pre;
+            font-family: Consolas, 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Problem!</h1>
+    {% if filename %}
+    <p><a href="/file?id={{filename}}">Fil</a></p>
+    {% endif %}
+    {% if text %}
+    <p class="text">{{text}}</p>
+    {% endif %}
+    {% if image %}
+    <p><img src="/image?id={{image}}"></p>
+    {% endif %}
+</body>
+</html>

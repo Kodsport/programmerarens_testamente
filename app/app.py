@@ -10,7 +10,7 @@ app = Flask(__name__)
 basedir = os.path.dirname(__file__)
 problems = list(map(lambda filename: filename.removesuffix('.py'), filter(lambda filename: filename.endswith('.py') and filename != 'template.py', os.listdir(os.path.join(basedir, 'problem')))))
 
-statefilePath = os.path.join(basedir, 'statefile.json')
+statefilePath = os.path.join(basedir, 'user', 'statefile.json')
 
 print('Problems', problems)
 
@@ -30,7 +30,7 @@ def storeState():
 	global STATE
 
 	with open(statefilePath, 'w') as statefile:
-		STATE = json.dumps(statefile.read(), indent=4)
+		statefile.write(json.dumps(STATE, indent=4))
 
 @app.route('/')
 def hello():
@@ -55,13 +55,15 @@ def qr():
 	if teams[team][STATE[f'team-{team}']] == id:
 		STATE[f'team-{team}'] += 1
 		storeState()
+	else:
+		return abort(401, 'Fel QR')
 
 	problem = problems[STATE[f'team-{team}']]
 
 	print(f'{problem=}')
 	problemModule = importlib.import_module(f'problem.{problems[problems.index(problem)]}', package=None)
 	if getattr(problemModule, 'generateFile', None):
-		return render_template('problem.html', filename=problem)
+		return render_template('problem.html', text=problemModule.generateFile(problems[STATE[f'team-{team}']]))
 	elif getattr(problemModule, 'generateText', None):
 		return render_template('problem.html', text=problemModule.generateText('heje'))
 	elif getattr(problemModule, 'generateImage', None):

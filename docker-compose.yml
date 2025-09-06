@@ -7,3 +7,6 @@ services:
     image: ksprt:latest
     ports:
       - 127.0.0.1:6969:6969
+
+    volumes:
+      - ./user:/app/user

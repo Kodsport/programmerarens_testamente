@@ -19,13 +19,11 @@ def kollaOmRätt(funktion):
 
     for i in range(10):
         import random
-        num = random.randint(1_000, 1_000_000)
+        ls = [random.randint(1_000, 1_000_000) for i in range(random.randint(10, 20))]
         with Capturing() as output:
-            funktion(num)
-        got = int(''.join(output).strip())
-        ans = (lambda b: (lambda L: sum(memoryview(b)) - ((L<<5)+(L<<4)))(len(b)))(f"{{num}}".encode())
-        if got != ans:
-            print(f'Tyvärr! För {{num}} svarade du {{got}} men svaret är {{ans}}')
+            funktion(ls)
+        if int(output[0]) != min(ls):
+            print(f'Tyvärr! För listan {{ls}} svarade ni {{int(output[0])}}, men svaret var {{min(ls)}}')
             break
     else:
         print(f'Sal {{sal}}')

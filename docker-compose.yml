@@ -1,8 +1,8 @@
 services:
-  ksprt:
-    container_name: ksprt
+  website:
+    container_name: pt-website
     build:
-      context: app
+      context: website
       dockerfile: Dockerfile
     image: ksprt:latest
     ports:

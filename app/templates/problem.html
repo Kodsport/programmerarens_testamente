@@ -15,14 +15,6 @@
 </head>
 <body>
     <h1>Problem!</h1>
-    {% if filename %}
-    <p><a href="/file?id={{filename}}">Fil</a></p>
-    {% endif %}
-    {% if text %}
-    <p class="text">{{text}}</p>
-    {% endif %}
-    {% if image %}
-    <p><img src="/image?id={{image}}"></p>
-    {% endif %}
+    {{ problem }}
 </body>
 </html>

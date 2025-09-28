@@ -87,16 +87,21 @@ def login():
 def qr():
     problem_id = request.args.get('id')
     team = request.cookies.get('team')
+    problem = problems[team_state[team]]
+
     if team not in teams:
         return redirect('/login')
     if not problem_id or problem_id not in uuids:
         return abort(400, 'Invalid ID')
-
     if team_order[team][team_state[team]] != problem_id:
-        return render_template('404.html'), 404
+        return render_template('qr-error.html'), 404
 
-    problem = problems[team_state[team]]
-    return render_template('problem.html', problem=problem)
+    with open(f"{problems_path}/{problem}/{problem}.json", 'r') as problem_file:
+        problem_data = json.load(problem_file)
+        problem_name = problem_data['name']
+        problem_desc = problem_data['description']
+
+    return render_template('problem.html', name=problem_name, description=problem_desc)
 
 
 if __name__ == '__main__':

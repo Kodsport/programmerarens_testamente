@@ -8,6 +8,7 @@ app = Flask(__name__)
 basedir = os.path.dirname(__file__)
 
 problems_path = os.path.join(basedir, 'problems')
+attempts_path = os.path.join(basedir, 'user', 'solutions')
 statefile_path = os.path.join(basedir, 'user', 'statefile.json')
 configfile_path = os.path.join(basedir, 'user', 'config.json')
 logfile_path = os.path.join(basedir, 'user', 'logfile.log')
@@ -20,20 +21,6 @@ with open(configfile_path, 'r') as config_file:
     teams = config_data['teams']
     uuids = [config_data['rooms'][i]['uuid']
              for i in range(len(config_data['rooms']))]
-
-print('Problems', problems)
-
-
-# def print(*msg):
-#     with open(logfile_path, 'a') as outfile:
-#         # outfile.write(f'{msg}\n')
-#         try:
-#             outfile.write(f'{"".join(map(str, *msg))}\n')
-#         except:
-#             try:
-#                 outfile.write(json.dumps(msg, indent=4))
-#             except:
-#                 pass
 
 
 if os.path.exists(statefile_path):
@@ -82,7 +69,6 @@ def login():
     return render_template('login.html', len=len(teams), teams=list(teams))
 
 
-# TODO: Implement showing problems and being able to solve them
 @app.route('/qr')
 def qr():
     problem_id = request.args.get('id')
@@ -102,6 +88,43 @@ def qr():
         problem_desc = problem_data['description']
 
     return render_template('problem.html', name=problem_name, description=problem_desc)
+
+
+@app.route('/api/submit', methods=['POST'])
+def submit():
+    input_data = request.form.get('inputData')
+    referrer = request.headers.get('Referer')
+    problem_id = referrer[-36:]
+    team = request.cookies.get('team')
+    team_attempts_path = os.path.join(attempts_path, team)
+
+    if not os.path.exists(team_attempts_path):
+        os.mkdir(team_attempts_path)
+
+    existing_attempts = []
+    for file in os.listdir(team_attempts_path):
+        if os.path.isfile(os.path.join(team_attempts_path, file)):
+            existing_attempts.append(file)
+
+    attempts = {}
+    for problem in problems:
+        temp = []
+        for file_name in existing_attempts:
+            if file_name.split('.')[0] == problem:
+                temp.append(int(file_name.split('.')[1]))
+        try:
+            number_of_attempts = max(temp)
+        except ValueError:
+            number_of_attempts = 0
+        attempts.update({problem: number_of_attempts})
+
+    problem_name = problems[team_order[team].index(problem_id)]
+    file_name = f"{problem_name}.{attempts[problem_name]+1}.py"
+    file_path = os.path.join(team_attempts_path, file_name)
+    with open(file_path, 'w') as file:
+        file.write(input_data)
+
+    return attempts, 201
 
 
 if __name__ == '__main__':

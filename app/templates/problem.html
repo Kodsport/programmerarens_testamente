@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,8 +14,31 @@
         }
     </style>
 </head>
+
 <body>
     <h1>{{ name }}</h1>
     {{ description }}
+    <div class="container">
+        <h1>Submit Your Data</h1>
+        <form id="dataForm">
+            <div class="mb-3">
+                <label for="inputData" class="form-label">Input Data</label>
+                <input type="text" class="form-control" id="inputData" name="inputData" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('dataForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            fetch('/api/submit', {
+                method: 'POST',
+                body: formData
+            })
+        });
+    </script>
 </body>
+
 </html>

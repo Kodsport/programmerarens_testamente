@@ -1,2 +1,3 @@
 __pycache__/
-app/user/
+app/user/*
+!app/user/config.json.example   

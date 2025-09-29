@@ -4,7 +4,7 @@ import os
 
 def main():
     client = docker.from_env()
-    image = client.images.build(path='app/', tag='pt-website')
+    image = client.images.build(path='app/', tag='pt-website', rm=True)
 
     for item in image[1]:
         for key, value in item.items():

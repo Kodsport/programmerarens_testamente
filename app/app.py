@@ -8,7 +8,7 @@ app = Flask(__name__)
 basedir = os.path.dirname(__file__)
 
 problems_path = os.path.join(basedir, 'problems')
-attempts_path = os.path.join(basedir, 'user', 'solutions')
+attempts_path = os.path.join(basedir, 'user', 'attempts')
 statefile_path = os.path.join(basedir, 'user', 'statefile.json')
 configfile_path = os.path.join(basedir, 'user', 'config.json')
 logfile_path = os.path.join(basedir, 'user', 'logfile.log')
@@ -80,7 +80,7 @@ def qr():
     if not problem_id or problem_id not in uuids:
         return abort(400, 'Invalid ID')
     if team_order[team][team_state[team]] != problem_id:
-        return render_template('qr-error.html'), 404
+        return render_template('error.html', error='Fel QR!'), 404
 
     with open(f"{problems_path}/{problem}/{problem}.json", 'r') as problem_file:
         problem_data = json.load(problem_file)
@@ -94,12 +94,13 @@ def qr():
 def submit():
     input_data = request.form.get('inputData')
     referrer = request.headers.get('Referer')
-    problem_id = referrer[-36:]
     team = request.cookies.get('team')
-    team_attempts_path = os.path.join(attempts_path, team)
+    problem_id = referrer[-36:]
+    problem_name = problems[team_order[team].index(problem_id)]
+    team_attempts_path = os.path.join(attempts_path, team, problem_name)
 
     if not os.path.exists(team_attempts_path):
-        os.mkdir(team_attempts_path)
+        os.makedirs(os.path.join(team_attempts_path), exist_ok=True)
 
     existing_attempts = []
     for file in os.listdir(team_attempts_path):
@@ -110,16 +111,14 @@ def submit():
     for problem in problems:
         temp = []
         for file_name in existing_attempts:
-            if file_name.split('.')[0] == problem:
-                temp.append(int(file_name.split('.')[1]))
+            temp.append(int(file_name.split('.')[0]))
         try:
             number_of_attempts = max(temp)
         except ValueError:
             number_of_attempts = 0
         attempts.update({problem: number_of_attempts})
 
-    problem_name = problems[team_order[team].index(problem_id)]
-    file_name = f"{problem_name}.{attempts[problem_name]+1}.py"
+    file_name = f"{attempts[problem_name]+1}.py"
     file_path = os.path.join(team_attempts_path, file_name)
     with open(file_path, 'w') as file:
         file.write(input_data)

@@ -71,12 +71,12 @@ def login():
 
 @app.route('/qr')
 def qr():
-    problem_id = request.args.get('id')
     team = request.cookies.get('team')
-    problem = problems[team_state[team]]
-
+    problem_id = request.args.get('id')
     if team not in teams:
         return redirect('/login')
+    problem = problems[team_state[team]]
+
     if not problem_id or problem_id not in uuids:
         return abort(400, 'Invalid ID')
     if team_order[team][team_state[team]] != problem_id:
@@ -92,38 +92,7 @@ def qr():
 
 @app.route('/api/submit', methods=['POST'])
 def submit():
-    input_data = request.form.get('inputData')
-    referrer = request.headers.get('Referer')
-    team = request.cookies.get('team')
-    problem_id = referrer[-36:]
-    problem_name = problems[team_order[team].index(problem_id)]
-    team_attempts_path = os.path.join(attempts_path, team, problem_name)
-
-    if not os.path.exists(team_attempts_path):
-        os.makedirs(os.path.join(team_attempts_path), exist_ok=True)
-
-    existing_attempts = []
-    for file in os.listdir(team_attempts_path):
-        if os.path.isfile(os.path.join(team_attempts_path, file)):
-            existing_attempts.append(file)
-
-    attempts = {}
-    for problem in problems:
-        temp = []
-        for file_name in existing_attempts:
-            temp.append(int(file_name.split('.')[0]))
-        try:
-            number_of_attempts = max(temp)
-        except ValueError:
-            number_of_attempts = 0
-        attempts.update({problem: number_of_attempts})
-
-    file_name = f"{attempts[problem_name]+1}.py"
-    file_path = os.path.join(team_attempts_path, file_name)
-    with open(file_path, 'w') as file:
-        file.write(input_data)
-
-    return attempts, 201
+    pass
 
 
 if __name__ == '__main__':

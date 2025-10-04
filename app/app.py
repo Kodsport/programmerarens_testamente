@@ -55,17 +55,14 @@ if set(team_state.keys()) != set(teams):
     logger.critical(f'File "{statefile_path}" does not contain all teams')
     exit()
 
-
 def storeState():
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
-
 
 team_order = {}
 for team in teams:
     team_order.update({team: random.sample(uuids, len(problems))})
 del team
-
 
 @app.route('/')
 def hello():
@@ -141,7 +138,6 @@ def admin():
                            teamState=team_state,
                            teamOrder=team_order)
 
-
 @app.route('/qr')
 def qr():
     team = request.cookies.get('team')
@@ -165,7 +161,6 @@ def qr():
     storeState()
 
     return redirect('/')
-
 
 def test_file(file_data, test_cases: list, max_time: int):
     with NamedTemporaryFile(delete=False,
@@ -214,7 +209,6 @@ def test_file(file_data, test_cases: list, max_time: int):
     os.remove(host_upload_path)
     return True
 
-
 @app.route('/api/submit_code', methods=['POST'])
 def submit():
     input_data = request.form.get('inputData')
@@ -253,7 +247,6 @@ def submit():
             "shared": passes_shared,
             "secret": passes_secret
         })
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6969, debug=True)

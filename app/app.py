@@ -4,9 +4,12 @@ import yaml
 import random
 import subprocess
 import importlib
+import logging
 from tempfile import NamedTemporaryFile
 from typing import Any
 from flask import Flask, render_template, abort, request, redirect, url_for
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -19,10 +22,12 @@ logfile_path = os.path.join(basedir, 'user', 'log.log')
 orderfile_path = os.path.join(basedir, 'user', "order.json")
 chrootdir_path = os.path.abspath('debian_filesystem')
 
+logging.basicConfig(filename=logfile_path, level=logging.DEBUG)
+logging.getLogger().addHandler(logging.StreamHandler())
 
 with open(configfile_path, 'r') as config_file:
     config_data: dict[str, Any] = yaml.load(config_file, yaml.Loader)
-    print(config_data)
+    logger.info(f'{config_data = }')
 
     problems: list = config_data['problems']
     teams: list = config_data['teams']
@@ -45,10 +50,10 @@ else:
 
 # Validate team_state
 if len(set(team_state.keys())) != len(team_state):
-    print(f'File "{statefile_path}" contains duplicate teams')
+    logger.critical(f'File "{statefile_path}" contains duplicate teams')
     exit()
 if set(team_state.keys()) != set(teams):
-    print(f'File "{statefile_path}" does not contain all teams')
+    logger.critical(f'File "{statefile_path}" does not contain all teams')
     exit()
 
 def storeState():
@@ -70,22 +75,22 @@ else:
 
 # Validate team_order
 if len(set(team_order.keys())) != len(team_order):
-    print(f'File "{orderfile_path}" contains duplicate teams')
+    logger.critical(f'File "{orderfile_path}" contains duplicate teams')
     exit()
 if set(team_order.keys()) != set(teams):
-    print(f'File "{orderfile_path}" does not contain all teams')
+    logger.critical(f'File "{orderfile_path}" does not contain all teams')
     exit()
 for order_for_team in team_order.values():
-    print(order_for_team)
+    logger.debug(order_for_team)
     for uuid in order_for_team:
         if uuid not in uuids:
-            print(f'File "{orderfile_path}" contains uuid "{uuid}" which does associated with a room')
+            logger.critical(f'File "{orderfile_path}" contains uuid "{uuid}" which does associated with a room')
             exit()
 if len(set(map(len, team_order.values()))) != 1:
-    print(f'File "{orderfile_path}" does not have same number of uuids for all teams')
+    logger.critical(f'File "{orderfile_path}" does not have same number of uuids for all teams')
     exit()
 if len(list(team_order.values())[0]) != len(problems):
-    print(f'File "{orderfile_path}" does not have same number of uuids as the number of problems in the config')
+    logger.critical(f'File "{orderfile_path}" does not have same number of uuids as the number of problems in the config')
     exit()
 
 
@@ -144,11 +149,13 @@ def hello():
                                     competitionName=competition_name,
                                     data=problem_data)
 
+    logger.error(f'Unknown problem type: {problem_type = }')
+
     return abort(500, 'Unable to parse problem')
 
 @app.route('/login')
 def login():
-    print(teams)
+    logger.debug(teams)
     return render_template('login.html', competitionName=competition_name, teams=teams)
 
 @app.route('/admin')
@@ -171,11 +178,11 @@ def qr():
     if not code_id or code_id not in uuids:
         return abort(400, 'Invalid ID')
 
-    # print(f'{team_order[team][team_state[team]] = }')
-    print(f'{team = }')
-    # print(f'{team_order[team] = }')
-    # print(f'{team_state[team] = }')
-    print(f'Expected ID: {team_order[team][team_state[team]]}. Code ID: {code_id}')
+    # logger.debug(f'{team_order[team][team_state[team]] = }')
+    logger.debug(f'{team = }')
+    # logger.debug(f'{team_order[team] = }')
+    # logger.debug(f'{team_state[team] = }')
+    logger.debug(f'Expected ID: {team_order[team][team_state[team]]}. Code ID: {code_id}')
 
     if team_order[team][team_state[team]] != code_id:
         return abort(400, 'Fel QR!')

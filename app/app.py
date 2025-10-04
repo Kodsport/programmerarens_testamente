@@ -1,9 +1,10 @@
 import os
 import json
+import yaml
 import random
 import subprocess
 from tempfile import NamedTemporaryFile
-
+from typing import Any
 from flask import Flask, render_template, abort, request, redirect, url_for
 app = Flask(__name__)
 
@@ -11,18 +12,24 @@ basedir = os.path.dirname(__file__)
 
 problems_path = os.path.join(basedir, 'problems')
 statefile_path = os.path.join(basedir, 'user', 'statefile.json')
-configfile_path = os.path.join(basedir, 'user', 'config.json')
+configfile_path = os.path.join(basedir, 'user', 'config.yaml')
 logfile_path = os.path.join(basedir, 'user', 'logfile.log')
 orderfile_path = os.path.join(basedir, 'user', "order.json")
 chrootdir_path = os.path.abspath('debian_filesystem')
 
 
 with open(configfile_path, 'r') as config_file:
-    config_data = json.load(config_file)
-    problems = config_data['problems']
-    teams = config_data['teams']
-    uuids = list(config_data['rooms'].values())
+    config_data: dict[str, Any] = yaml.load(config_file, yaml.Loader)
+    print(config_data)
 
+    problems: list = config_data['problems']
+    teams: list = config_data['teams']
+    rooms: dict[str, str] = config_data['rooms']
+    competition_name: str = config_data['competition-name']
+    seed: str = config_data['seed']
+
+    uuids = list(rooms.values())
+    random.seed()
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
@@ -31,6 +38,7 @@ else:
     team_state = {}
     for team in teams:
         team_state[team] = 0
+    del team
 
 
 def storeState():
@@ -40,8 +48,6 @@ def storeState():
         statefile.write(json.dumps(team_state, indent=4))
 
 
-random.seed(config_data['seed'])
-
 if os.path.exists(orderfile_path):
     with open(orderfile_path) as orderfile:
         team_order = json.loads(orderfile.read())
@@ -49,6 +55,7 @@ else:
     team_order = {}
     for team in teams:
         team_order.update({team: random.sample(uuids, len(uuids))})
+    del team
 
     with open(orderfile_path, 'w') as orderfile:
         orderfile.write(json.dumps(team_order, indent=4))
@@ -60,36 +67,60 @@ def hello():
         return redirect(url_for('login'), code=307)
     elif request.cookies.get('team') not in teams:
         return redirect(url_for('login'), code=307)
-    else:
-        return render_template('index.html')
+
+    team = request.cookies.get('team')
+    problem = problems[team_state[team]]
+
+    with open(os.path.join(problems_path, problem, 'problem.yaml'), 'r') as problem_file:
+        problem_data: dict[str, Any] = yaml.load(problem_file, yaml.Loader)
+        problem_name = problem_data['name']
+        problem_desc = problem_data['description']
+
+        extra = {'team': team, 'team_order': team_order, 'team_state': team_state}
+
+    return render_template('problem.html', competitionName=competition_name, name=problem_name, description=problem_desc, extra=extra)
+
+    # return render_template('index.html', competitionName=competition_name)
 
 
 @app.route('/login')
 def login():
     print(teams)
-    return render_template('login.html', len=len(teams), teams=list(teams))
+    return render_template('login.html', competitionName=competition_name, teams=teams)
 
+@app.route('/admin')
+def admin():
+    return render_template('admin.html',
+                           competitionName=competition_name,
+                           teams=teams,
+                           problems=problems,
+                           rooms=rooms,
+                           teamState=team_state,
+                           teamOrder=team_order)
 
 @app.route('/qr')
 def qr():
     team = request.cookies.get('team')
-    problem_id = request.args.get('id')
+    code_id = request.args.get('id')
     if team not in teams:
         return redirect('/login')
-    problem = problems[team_state[team]]
 
-    if not problem_id or problem_id not in uuids:
+    if not code_id or code_id not in uuids:
         return abort(400, 'Invalid ID')
-    if team_order[team][team_state[team]] != problem_id:
-        return render_template('error.html', error='Fel QR!'), 404
 
-    with open(os.path.join(problems_path, problem, f"{problem}.json"), 'r') as problem_file:
-        problem_data = json.load(problem_file)
-        problem_name = problem_data['name']
-        problem_desc = problem_data['description']
+    # print(f'{team_order[team][team_state[team]] = }')
+    print(f'{team = }')
+    # print(f'{team_order[team] = }')
+    # print(f'{team_state[team] = }')
+    print(f'Expected ID: {team_order[team][team_state[team]]}. Code ID: {code_id}')
 
-    return render_template('problem.html', name=problem_name, description=problem_desc)
+    if team_order[team][team_state[team]] != code_id:
+        return abort(400, 'Fel QR!')
 
+    team_state[team] += 1
+    storeState()
+
+    return redirect('/')
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit():
@@ -160,4 +191,4 @@ def submit():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6969)
+    app.run(host='0.0.0.0', port=6969, debug=True)

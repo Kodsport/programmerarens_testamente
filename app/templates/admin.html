@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - {{ competitionName }}</title>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td, th {
+            border: 0.1em solid var(--on-background-color);
+            padding: 0.75em 1.5em;
+            text-align: center;
+        }
+        td.problem {
+            background-color: #f003;
+        }
+        td.problem.completed {
+            background-color: #0f0c;
+            color: black;
+        }
+
+        section code {
+            white-space: pre;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Admin - {{ competitionName }}</h1>
+
+    <section id="scoreboard">
+        <h2>Scoreboard</h2>
+        <table>
+            <tr>
+                <th>Team</th>
+                {% for problem in problems %}
+                <th>{{ problem }}</th>
+                {% endfor %}
+            </tr>
+            {% for team in teams %}
+            <tr>
+                <td>{{ team }}</td>
+                {% for problem in problems %}
+                {% if teamState[team] >= loop.index %}
+                <td class="problem completed">Yes</td>
+                {% else %}
+                <td class="problem">---</td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section id="teams">
+        <h2>Teams</h2>
+        <ul>
+            {%for team in teams%}
+            <li>{{ team }}</li>
+            {%endfor%}
+        </ul>
+    </section>
+    <section id="problems">
+        <h2>Problems</h2>
+        <ol>
+            {%for problem in problems%}
+            <li>{{ problem }}</li>
+            {%endfor%}
+        </ol>
+    </section>
+    <section id="rooms">
+        <h2>Rooms</h2>
+        <ul>
+            {%for room in rooms%}
+            <li title="{{ rooms[room] }}">{{ room }}</li>
+            {%endfor%}
+        </ul>
+    </section>
+
+    <details open>
+        <summary>Advanced</summary>
+        <section style="display: flex; flex-direction: column; gap: 1em;">
+            <code>teams: {{ teams | tojson(2) }}</code>
+            <code>problems: {{ problems | tojson(2) }}</code>
+            <code>rooms: {{ rooms | tojson(2) }}</code>
+            <code>teamState: {{ teamState | tojson(2) }}</code>
+            <code>teamOrder: {{ teamOrder | tojson(2) }}</code>
+        </section>
+    </details>
+</body>
+</html>

@@ -1,4 +1,4 @@
 __pycache__/
 app/user/*
-!app/user/config.json.example
+!app/user/config.yaml.example
 debian_filesystem/

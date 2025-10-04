@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data['name'] }} - {{ competitionName }}</title>
+    <script src="{{ url_for('static', filename='prism.js') }}"></script>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
+        @import url({{ url_for('static', filename='prism.css') }}) layer(prism);
+
+        #highlighting {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            width: 100%;
+            height: fit-content;
+            position: relative;
+            padding: 15px;
+            box-sizing: border-box;
+            overflow: auto;
+            white-space: pre;
+            font-size: 15pt;
+            font-family: monospace;
+            line-height: 1.5;
+            tab-size: 2;
+            cursor: not-allowed;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>{{ data['name'] }}</h1>
+    <h2>{{ data['description'] }}</h2>
+    <pre id="highlighting" aria-hidden="true"><code class="language-python" id="highlighting-content">{{ code }}</code></pre>
+</body>
+</html>

@@ -3,9 +3,11 @@ import json
 import yaml
 import random
 import subprocess
+import importlib
 from tempfile import NamedTemporaryFile
 from typing import Any
 from flask import Flask, render_template, abort, request, redirect, url_for
+
 app = Flask(__name__)
 
 basedir = os.path.dirname(__file__)
@@ -25,6 +27,7 @@ with open(configfile_path, 'r') as config_file:
     problems: list = config_data['problems']
     teams: list = config_data['teams']
     rooms: dict[str, str] = config_data['rooms']
+    unusedRooms: list[str] = config_data['unused-rooms']
     competition_name: str = config_data['competition-name']
     seed: str = config_data['seed']
 
@@ -95,16 +98,53 @@ def hello():
 
     team = request.cookies.get('team')
     problem = problems[team_state[team]]
+    if 'problem' in request.args:
+        problem = request.args['problem']
 
     with open(os.path.join(problems_path, problem, 'problem.yaml'), 'r') as problem_file:
         problem_data: dict[str, Any] = yaml.load(problem_file, yaml.Loader)
-        problem_name = problem_data['name']
-        problem_desc = problem_data['description']
 
-    return render_template('problem.html', competitionName=competition_name, name=problem_name, description=problem_desc)
+        problem_type: str = problem_data['type']
 
-    # return render_template('index.html', competitionName=competition_name)
+    def generateCode():
+        problemModule = importlib.import_module(f'problems.{problems[problems.index(problem)]}.generate', package=None)
+        roomUuid: str = team_order[team][team_state[team]]
+        correctRoom: str = next(room for room in rooms if rooms[room] == roomUuid)
+        return problemModule.generateCode(correctRoom, unusedRooms)
 
+    match problem_type:
+        case 'pt_what-is-code-doing':
+            code = generateCode()
+            return render_template('problem.show-code.html',
+                                    competitionName=competition_name,
+                                    data=problem_data,
+                                    code=code)
+
+        case 'pt_text':
+            code = generateCode()
+            return render_template('problem.show-text.html',
+                                    competitionName=competition_name,
+                                    data=problem_data,
+                                    code=code)
+
+        case 'pass-fail':
+            with open(os.path.join(problems_path, problem, 'data', 'sample', '1.in'), 'r') as in_file:
+                input_data = in_file.read()
+            with open(os.path.join(problems_path, problem, 'data', 'sample', '1.ans'), 'r') as out_file:
+                output_data = out_file.read()
+
+            return render_template('problem.submit-code.html',
+                                    competitionName=competition_name,
+                                    data=problem_data,
+                                    input=input_data,
+                                    output=output_data)
+
+        case 'pt_input-text':
+            return render_template('problem.submit-text.html',
+                                    competitionName=competition_name,
+                                    data=problem_data)
+
+    return abort(500, 'Unable to parse problem')
 
 @app.route('/login')
 def login():

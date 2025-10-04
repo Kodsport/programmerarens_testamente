@@ -1,9 +1,9 @@
-def generateCode(flag: str, unusedRooms: list[str]):
+def generateCode(room: str, unusedRooms: list[str]):
     import random
     kod = f"""a = [-2, 3, 1]
 b = [-5, -2, -3]
 i = min(a)-max(b)
-salar = [{flag}, {random.choice(unusedRooms)}, {random.choice(unusedRooms)}]
+salar = [{room}, {random.choice(unusedRooms)}, {random.choice(unusedRooms)}]
 print(salar[i])
 """
     return kod

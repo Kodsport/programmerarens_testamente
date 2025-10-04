@@ -11,6 +11,11 @@ rooms:
   room3: e6403ee6-6fe1-4e36-9a09-41e99fc2a1b1
   room4: 7b9f1d4b-b96d-4ea6-8c82-de2ebeed74d0
   room5: 3b54d4a7-4e61-423e-974c-4d69457e5379
+unused-rooms:
+  - room6
+  - room7
+  - room8
+  - room9
 problems:
   - template
   - minMax

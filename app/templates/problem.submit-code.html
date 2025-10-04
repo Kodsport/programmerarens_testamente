@@ -1,21 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }} - {{ competitionName }}</title>
+    <title>{{ data['name'] }} - {{ competitionName }}</title>
     <script src="{{ url_for('static', filename='prism.js') }}"></script>
     <style>
         @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
         @import url({{ url_for('static', filename='prism.css') }}) layer(prism);
 
+        form > div, #inputData, #highlighting {
+            height: 90vh;
+            width: 100%;
+        }
+
         #inputData, #highlighting {
             margin: 0;
             padding: 0;
             border: 0;
-            width: 100%;
-            height: 50vh;
         }
         #inputData, #highlighting, #highlighting * {
             font-size: 15pt;
@@ -55,35 +58,50 @@
             resize: none;
         }
 
-        p code {
-            border-radius: 2px;
-            background-color: #eee;
-            color: #111;
-        }
-
-        form > div {
-            height: 50vh;
-            margin-top: 0.5em;
-        }
-
-        h2 {
-            margin-bottom: 0;
-        }
-
         p.text {
-            white-space: pre;
+            white-space: pre-wrap;
+            max-width: 100%;
+        }
+
+        section {
+            margin: 1em 0;
+        }
+
+        section:has(> code) {
+            padding-bottom: 15px;
+        }
+
+        section > code {
+            padding: 15px;
+            background: #1F1F1F;
+            border-radius: .5em;
+            box-shadow: 1px 1px .5em #000 inset;
         }
     </style>
 </head>
 
 <body>
-    <h1>{{ name }}</h1>
-    <p class="text">{{ description }}</p>
-    <div class="container">
+    <h1>{{ data['name'] }}</h1>
+    <p class="text">{{ data['description'] }}</p>
+
+    <section>
+        <h2>Input</h2>
+        <code>{{ input }}</code>
+    </section>
+    <section>
+        <h2>Output</h2>
+        <code>{{ output }}</code>
+    </section>
+
+    <section id="code">
         <h2>Din kod</h2>
         <form id="dataForm">
+            <label>Ladda upp fil
+                <input type="file" accept=".py">
+            </label>
+
             <div>
-                <textarea id="inputData" name="inputData" required spellcheck="false" oninput="update(this.value); sync_scroll(this);" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);"></textarea>
+                <textarea id="inputData" name="inputData" required spellcheck="false" oninput="update(); sync_scroll(this);" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);"></textarea>
                 <pre id="highlighting" aria-hidden="true">
 <code class="language-python" id="highlighting-content">b = [10, True, None, 1 &amp; 2]
 a = b
@@ -93,27 +111,29 @@ def hej(ehehe):
 </code>
 </pre>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Skicka</button>
         </form>
-    </div>
+    </section>
 
     <script>
-        document.getElementById('dataForm').addEventListener('submit', function (event) {
+        const dataFormElem = document.querySelector('#dataForm');
+        const inputDataElem = document.querySelector('#inputData');
+        const highlightingElem = document.querySelector('#highlighting');
+        const highlightingContentElem = document.querySelector('#highlighting-content');
+
+        dataFormElem.addEventListener('submit', function (event) {
             event.preventDefault();
             const formData = new FormData(event.target);
             fetch('/api/submit_code', {
                 method: 'POST',
                 body: formData
-            })
+            });
         });
 
-        const inputDataElem = document.querySelector('#inputData');
-        const highlightingElem = document.querySelector('#highlighting');
-        const highlightingContentElem = document.querySelector('#highlighting-content');
-
         // https://css-tricks.com/creating-an-editable-textarea-that-supports-syntax-highlighted-code/
-        function update(text) {
+        function update() {
             const result_element = highlightingContentElem;
+            let text = inputDataElem.value;
             // Handle final newlines (see article)
             if(text[text.length-1] == "\n") {
                 text += " ";
@@ -132,27 +152,47 @@ def hej(ehehe):
             result_element.scrollLeft = element.scrollLeft;
         }
 
-        function check_tab(element, event) {
-            const code = element.value;
+        function check_tab(elem, event) {
+            const code = elem.value;
             if(event.key == "Tab") {
                 /* Tab key pressed */
                 event.preventDefault(); // stop normal
-                const before_tab = code.slice(0, element.selectionStart); // text before tab
-                const after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
-                const cursor_pos = element.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
-                element.value = before_tab + "\t" + after_tab; // add tab char
+                const before_tab = code.slice(0, elem.selectionStart); // text before tab
+                const after_tab = code.slice(elem.selectionEnd, elem.value.length); // text after tab
+                const cursor_pos = elem.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
+                elem.value = before_tab + "\t" + after_tab; // add tab char
                 // move cursor
-                element.selectionStart = cursor_pos;
-                element.selectionEnd = cursor_pos;
-                update(element.value); // Update text to include indent
+                elem.selectionStart = cursor_pos;
+                elem.selectionEnd = cursor_pos;
             }
         }
+
+        dataFormElem.querySelector('input[type=file]').addEventListener('change', changeEvent => {
+            if(!confirm('Vill du byta ut all kod skriven här mot koden i den uppladdade filen?')) {
+                return;
+            }
+
+            const file = changeEvent.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsText(file);
+
+                reader.onload = async function (loadEvent) {
+                    console.log('load', loadEvent);
+                    inputDataElem.value = loadEvent.target.result;
+                    update();
+                }
+                reader.onerror = function (errorEvent) {
+                    console.error(errorEvent);
+                }
+            }
+        });
 
         if(inputDataElem.value.length === 0 && highlightingContentElem.textContent.length > 0) {
             const text = highlightingContentElem.textContent;
             inputDataElem.value = text;
         }
-        update(inputDataElem.value);
+        update();
     </script>
 </body>
 </html>

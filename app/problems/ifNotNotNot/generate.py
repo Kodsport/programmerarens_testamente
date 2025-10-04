@@ -1,4 +1,4 @@
-def generateCode(flag: str, unusedRooms: list[str]):
+def generateCode(room: str, unusedRooms: list[str]):
     import random
     kod = f"""x=4
 if not not not not (x^2==16):
@@ -6,7 +6,7 @@ if not not not not (x^2==16):
 elif False**False < True**True:
     print({random.choice(unusedRooms)})
 else:
-    print({flag})
+    print({room})
 """
 
     return kod

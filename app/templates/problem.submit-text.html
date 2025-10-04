@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data['name'] }} - {{ competitionName }}</title>
+    <script src="{{ url_for('static', filename='prism.js') }}"></script>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
+        @import url({{ url_for('static', filename='prism.css') }}) layer(prism);
+
+        #inputData, #highlighting {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            width: 100%;
+            height: 50vh;
+        }
+        #inputData, #highlighting, #highlighting * {
+            font-size: 15pt;
+            font-family: monospace;
+            line-height: 1.5;
+            tab-size: 2;
+        }
+
+        #inputData, #highlighting {
+            position: relative;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        #highlighting {
+            transform: translateY(-100%);
+        }
+
+        #inputData {
+            z-index: 1;
+        }
+        #highlighting {
+            z-index: 0;
+        }
+
+        #inputData {
+            color: transparent;
+            background: transparent;
+            caret-color: white;
+        }
+
+        #inputData, #highlighting {
+            overflow: auto;
+            white-space: pre;
+        }
+
+        #inputData {
+            resize: none;
+        }
+
+        p code {
+            border-radius: 2px;
+            background-color: #eee;
+            color: #111;
+        }
+
+        form > div {
+            height: 50vh;
+            margin-top: 0.5em;
+        }
+
+        h2 {
+            margin-bottom: 0;
+        }
+
+        p.text {
+            white-space: pre;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>{{ data['name'] }}</h1>
+    <p class="text">{{ data['description'] }}</p>
+    <div class="container">
+        <h2>Din kod</h2>
+        <form id="dataForm">
+            <div>
+                <textarea id="inputData" name="inputData" required spellcheck="false" oninput="update(this.value); sync_scroll(this);" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);"></textarea>
+                <pre id="highlighting" aria-hidden="true">
+<code class="language-python" id="highlighting-content">b = [10, True, None, 1 &amp; 2]
+a = b
+{ "hej": "hej" }
+def hej(ehehe):
+	print(ehehe)
+</code>
+</pre>
+            </div>
+            <button type="submit" class="btn btn-primary">Skicka</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('dataForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            fetch('/api/submit_code', {
+                method: 'POST',
+                body: formData
+            })
+        });
+
+        const inputDataElem = document.querySelector('#inputData');
+        const highlightingElem = document.querySelector('#highlighting');
+        const highlightingContentElem = document.querySelector('#highlighting-content');
+
+        // https://css-tricks.com/creating-an-editable-textarea-that-supports-syntax-highlighted-code/
+        function update(text) {
+            const result_element = highlightingContentElem;
+            // Handle final newlines (see article)
+            if(text[text.length-1] == "\n") {
+                text += " ";
+            }
+            // Update code
+            result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
+            // Syntax Highlight
+            Prism.highlightElement(result_element);
+        }
+
+        function sync_scroll(element) {
+            /* Scroll result to scroll coords of event - sync with textarea */
+            const result_element = highlightingElem;
+            // Get and set x and y
+            result_element.scrollTop = element.scrollTop;
+            result_element.scrollLeft = element.scrollLeft;
+        }
+
+        function check_tab(element, event) {
+            const code = element.value;
+            if(event.key == "Tab") {
+                /* Tab key pressed */
+                event.preventDefault(); // stop normal
+                const before_tab = code.slice(0, element.selectionStart); // text before tab
+                const after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
+                const cursor_pos = element.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
+                element.value = before_tab + "\t" + after_tab; // add tab char
+                // move cursor
+                element.selectionStart = cursor_pos;
+                element.selectionEnd = cursor_pos;
+                update(element.value); // Update text to include indent
+            }
+        }
+
+        if(inputDataElem.value.length === 0 && highlightingContentElem.textContent.length > 0) {
+            const text = highlightingContentElem.textContent;
+            inputDataElem.value = text;
+        }
+        update(inputDataElem.value);
+    </script>
+</body>
+</html>

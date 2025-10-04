@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data['name'] }} - {{ competitionName }}</title>
+    <style>
+        @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
+
+        p.text {
+            white-space: pre-wrap;
+            margin-bottom: calc(1em + 15px);
+        }
+
+        code {
+            padding: 15px;
+            background: #1F1F1F;
+            border-radius: .5em;
+            box-shadow: 1px 1px .5em #000 inset;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>{{ data['name'] }}</h1>
+    <p class="text">{{ data['description'] }}</p>
+    <code>{{ code }}</code>
+</body>
+</html>

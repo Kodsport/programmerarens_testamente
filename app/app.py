@@ -91,33 +91,71 @@ def qr():
     return render_template('problem.html', name=problem_name, description=problem_desc)
 
 
-@app.route('/api/submit', methods=['POST'])
+@app.route('/api/submit_code', methods=['POST'])
 def submit():
     input_data = request.form.get('inputData')
     team = request.cookies.get('team')
     problem_id = request.referrer[-36:]
     problem = problems[team_order[team].index(problem_id)]
+
+    with open(os.path.join(problems_path, problem, f"{problem}.json")) as config_file:
+        problem_config_data = json.load(config_file)
+        max_time = problem_config_data['max_time']
+
     shared_test_cases_path = os.path.join(problems_path, problem, 'shared')
 
     with NamedTemporaryFile(delete=False,
                             dir=os.path.join(chrootdir_path, 'tmp'), suffix='.py') as temp_file:
-        upload_path = temp_file.name
+        host_upload_path = temp_file.name
+        jail_upload_path = os.path.join('/tmp', os.path.basename(temp_file.name))
         temp_file.write(input_data.encode())
+    os.chmod(host_upload_path, 0o644)
 
-    test_cases = {}
-    for i in range(int(len(os.listdir(shared_test_cases_path))/2)):
-        with open(os.path.join(shared_test_cases_path, f"{i+1}.in")) as in_data, open(os.path.join(shared_test_cases_path, f"{i+1}.ans")) as response:
-            test_cases[in_data.read()] = response.read()
+    test_cases = []
+    files = sorted(os.listdir(shared_test_cases_path))
+    num_cases = len(files) // 2
 
-        command = f"sudo ./nsjail -Mo -Q --chroot {chrootdir_path} -- /usr/bin/echo {list(test_cases.keys())[i]} | /usr/bin/python3 {upload_path}"  # Remove sudo when running docker container
-        output = subprocess.run(command, capture_output=True, text=True, shell=True)
-        if output.stdout.strip() != list(test_cases.values())[i].strip():
-            os.remove(upload_path)
-            return output.stderr
+    for i in range(1, num_cases + 1):
+        with open(os.path.join(shared_test_cases_path, f"{i}.in")) as f_in, \
+                open(os.path.join(shared_test_cases_path, f"{i}.ans")) as f_ans:
+            test_cases.append((f_in.read(), f_ans.read()))
+
+    for input_text, expected_output in test_cases:
+        if os.environ.get('AM_I_A_DOCKER_CONTIANER', False):
+            command = ["./nsjail"]
+        else:
+            command = ["sudo", "./nsjail"]
+
+        command.extend([
+            "-Mo",
+            "-q",
+            "--disable_clone_newns",
+            "--disable_clone_newuser",
+            "--disable_clone_newpid",
+            "--disable_clone_newcgroup",
+            "--disable_clone_newuts",
+            "--disable_clone_newipc",
+            "--disable_clone_newnet",
+            "--rlimit_cpu", str(max_time),
+            "--chroot", chrootdir_path,
+            "--",
+            "/usr/bin/python3",
+            "-u",
+            jail_upload_path
+        ])
+
+        result = subprocess.run(command,
+                                input=input_text,
+                                capture_output=True,
+                                text=True)
+
+        if result.stdout.strip() != expected_output.strip():
+            os.remove(host_upload_path)
+            return result.stderr
     # team_state[team] += 1
     # storeState()
-    os.remove(upload_path)
-    print(config_data['rooms'])
+    os.remove(host_upload_path)
+
     return ''.join([name for name, uuid in config_data['rooms'].items() if uuid == team_order[team][team_state[team]]])
 
 

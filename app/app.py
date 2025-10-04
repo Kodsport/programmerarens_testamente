@@ -1,6 +1,8 @@
 import os
 import json
 import random
+import subprocess
+from tempfile import NamedTemporaryFile
 
 from flask import Flask, render_template, abort, request, redirect, url_for
 app = Flask(__name__)
@@ -8,19 +10,18 @@ app = Flask(__name__)
 basedir = os.path.dirname(__file__)
 
 problems_path = os.path.join(basedir, 'problems')
-attempts_path = os.path.join(basedir, 'user', 'attempts')
 statefile_path = os.path.join(basedir, 'user', 'statefile.json')
 configfile_path = os.path.join(basedir, 'user', 'config.json')
 logfile_path = os.path.join(basedir, 'user', 'logfile.log')
 orderfile_path = os.path.join(basedir, 'user', "order.json")
+chrootdir_path = os.path.abspath('debian_filesystem')
 
 
 with open(configfile_path, 'r') as config_file:
     config_data = json.load(config_file)
     problems = config_data['problems']
     teams = config_data['teams']
-    uuids = [config_data['rooms'][i]['uuid']
-             for i in range(len(config_data['rooms']))]
+    uuids = list(config_data['rooms'].values())
 
 
 if os.path.exists(statefile_path):
@@ -82,7 +83,7 @@ def qr():
     if team_order[team][team_state[team]] != problem_id:
         return render_template('error.html', error='Fel QR!'), 404
 
-    with open(f"{problems_path}/{problem}/{problem}.json", 'r') as problem_file:
+    with open(os.path.join(problems_path, problem, f"{problem}.json"), 'r') as problem_file:
         problem_data = json.load(problem_file)
         problem_name = problem_data['name']
         problem_desc = problem_data['description']
@@ -92,7 +93,32 @@ def qr():
 
 @app.route('/api/submit', methods=['POST'])
 def submit():
-    pass
+    input_data = request.form.get('inputData')
+    team = request.cookies.get('team')
+    problem_id = request.referrer[-36:]
+    problem = problems[team_order[team].index(problem_id)]
+    shared_test_cases_path = os.path.join(problems_path, problem, 'shared')
+
+    with NamedTemporaryFile(delete=False,
+                            dir=os.path.join(chrootdir_path, 'tmp'), suffix='.py') as temp_file:
+        upload_path = temp_file.name
+        temp_file.write(input_data.encode())
+
+    test_cases = {}
+    for i in range(int(len(os.listdir(shared_test_cases_path))/2)):
+        with open(os.path.join(shared_test_cases_path, f"{i+1}.in")) as in_data, open(os.path.join(shared_test_cases_path, f"{i+1}.ans")) as response:
+            test_cases[in_data.read()] = response.read()
+
+        command = f"sudo ./nsjail -Mo -Q --chroot {chrootdir_path} -- /usr/bin/echo {list(test_cases.keys())[i]} | /usr/bin/python3 {upload_path}"  # Remove sudo when running docker container
+        output = subprocess.run(command, capture_output=True, text=True, shell=True)
+        if output.stdout.strip() != list(test_cases.values())[i].strip():
+            os.remove(upload_path)
+            return output.stderr
+    # team_state[team] += 1
+    # storeState()
+    os.remove(upload_path)
+    print(config_data['rooms'])
+    return ''.join([name for name, uuid in config_data['rooms'].items() if uuid == team_order[team][team_state[team]]])
 
 
 if __name__ == '__main__':

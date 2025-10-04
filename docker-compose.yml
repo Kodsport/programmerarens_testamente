@@ -2,7 +2,7 @@ services:
   website:
     container_name: pt-website
     build:
-      context: website
+      context: app
       dockerfile: Dockerfile
     image: pt-website:latest
     ports:

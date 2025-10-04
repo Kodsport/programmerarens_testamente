@@ -1,3 +1,5 @@
 name: Template
-description: Template Templateson wants to hear his name.\nPrint his name the amount of times he asks you to.
-type: kattis
+type: pass-fail
+description: "Template Templateson wants to hear his name.\nPrint his name the amount of times he asks you to."
+source: Programmerarens Testamente
+author: IHaveQuestions2010

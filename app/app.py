@@ -29,7 +29,7 @@ with open(configfile_path, 'r') as config_file:
     seed: str = config_data['seed']
 
     uuids = list(rooms.values())
-    random.seed()
+    random.seed(seed)
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
@@ -126,7 +126,7 @@ def qr():
     team = request.cookies.get('team')
     code_id = request.args.get('id')
     if team not in teams:
-        return redirect('/login')
+        return redirect(f'/login?id={code_id}')
 
     if not code_id or code_id not in uuids:
         return abort(400, 'Invalid ID')

@@ -7,10 +7,11 @@
     <title>Välj lag - {{ competitionName }}</title>
     <style>
         @import url({{ url_for('static', filename='toolstyle.css')}}) layer(toolstyle);
-        .center {
+        #teams {
             display: flex;
+            flex-direction: column;
             justify-content: center;
-            align-items: center;;
+            align-items: center;
         }
         button {
             font-size: 30px;
@@ -20,15 +21,25 @@
             border-color: #444444;
         }
     </style>
+    <script>
+        function setTeam(team) {
+            document.cookie = `team=${team};path=/;max-age=86400`;
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.has('id')) {
+                window.location.href = `/qr?id=${urlParams.get('id')}`;
+            } else {
+                window.location.href = '/';
+            }
+        }
+    </script>
 </head>
 
 <body>
     <h1 style="text-align: center;">Välj ditt lag:</h1>
-    <div class="center">
+    <div id="teams">
         {%for team in teams%}
-        <button onclick="document.cookie='team={{ team }};path=/;max-age=86400'; history.back()">{{ team }}</button>
+        <button onclick="setTeam('{{ team }}')">{{ team }}</button>
         {%endfor%}
     </div>
 </body>
-
 </html>

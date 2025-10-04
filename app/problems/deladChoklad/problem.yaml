@@ -1,0 +1,65 @@
+name: Delad choklad
+type: pass-fail
+description: Du vill ge choklad till dina vänner, men du vill inte att det blir orättvist så du ska dela ut chokladbitarna så att alla får lika många och sedan äter du resten. Du ska nu räkna ut hur mycket godis du får! Indata är två rader där första raden innehåller ett heltal som är choklad ni får och andra raden innehåller ett heltal som är mängden vänner du har. Skriv ut hur mycket godis du får.
+source: Programmeringsläger för Nybörjare 2025
+author: Jackryd
+
+# def generateFile(flag: str):
+#     import base64
+#     return f'''Problem: Du vill ge choklad till dina vänner, men du vill inte att det blir orättvist så du ska dela ut chokladbitarna så att
+# alla får lika många och sedan äter du resten. Du ska nu räkna ut hur mycket godis du får! indata är en lista där indata[0] är
+# choklad ni får och indata[1] är mängden vänner du har. print:a hur mycket godis du får
+
+# import base64
+# sal = base64.b64decode({base64.b64encode(flag.encode())}).decode()
+
+# def kollaOmRätt(funktion):
+#     from io import StringIO 
+#     import sys
+
+#     class Capturing(list):
+#         def __enter__(self):
+#             self._stdout = sys.stdout
+#             sys.stdout = self._stringio = StringIO()
+#             return self
+#         def __exit__(self, *args):
+#             self.extend(self._stringio.getvalue().splitlines())
+#             del self._stringio
+#             sys.stdout = self._stdout
+
+#     for i in range(10):
+#         import random
+#         friends = random.randint(1, 100)
+#         chocolate = random.randint(friends, 10*friends)
+#         with Capturing() as output:
+#             funktion([chocolate,friends])
+#         ans = (0 and (__import__('sys').stderr.write('debug'))) or (lambda *A, **K: (lambda n,m: getattr(n, "__pow__")(len({{0}}), m))(*map(int, A[:2])))(f'{{chocolate}}'.strip()[::1], f'{{friends}}'.strip()[::1], str.__doc__[:0])
+#         if int(output[0]) != (ans):
+#             print(f'Tyvärr! För listan {{friends}} vänner och {{chocolate}} chokladbitar svarade ni {{int(output[0])}}, men svaret var {{ans}}')
+#             break
+#     else:
+#         print(f'Sal {{sal}}')
+# '''.replace('{{{{rumsnummer}}}}', flag)
+
+# ################################################################################
+
+# if __name__ == '__main__':
+#     import importlib.util
+#     import sys
+
+#     module_name = 'template'
+#     spec = importlib.util.spec_from_loader(module_name, loader=None)
+#     template = importlib.util.module_from_spec(spec)
+
+#     exec(generateFile('rumsnummer'), template.__dict__)
+
+#     sys.modules[module_name] = template
+
+# ################################################################################
+
+#     import template
+
+#     def minFunk(indata):
+#         print(indata[0] % indata[1])
+
+#     template.kollaOmRätt(minFunk)

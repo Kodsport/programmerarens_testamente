@@ -11,9 +11,9 @@ app = Flask(__name__)
 basedir = os.path.dirname(__file__)
 
 problems_path = os.path.join(basedir, 'problems')
-statefile_path = os.path.join(basedir, 'user', 'statefile.json')
+statefile_path = os.path.join(basedir, 'user', 'state.json')
 configfile_path = os.path.join(basedir, 'user', 'config.yaml')
-logfile_path = os.path.join(basedir, 'user', 'logfile.log')
+logfile_path = os.path.join(basedir, 'user', 'log.log')
 orderfile_path = os.path.join(basedir, 'user', "order.json")
 chrootdir_path = os.path.abspath('debian_filesystem')
 
@@ -33,32 +33,57 @@ with open(configfile_path, 'r') as config_file:
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
-        team_state = json.loads(statefile.read())
+        team_state: dict[str, int] = json.loads(statefile.read())
 else:
     team_state = {}
     for team in teams:
         team_state[team] = 0
     del team
 
+# Validate team_state
+if len(set(team_state.keys())) != len(team_state):
+    print(f'File "{statefile_path}" contains duplicate teams')
+    exit()
+if set(team_state.keys()) != set(teams):
+    print(f'File "{statefile_path}" does not contain all teams')
+    exit()
 
 def storeState():
-    global team_state
-
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
 
 
 if os.path.exists(orderfile_path):
     with open(orderfile_path) as orderfile:
-        team_order = json.loads(orderfile.read())
+        team_order: dict[str, list[str]] = json.loads(orderfile.read())
 else:
     team_order = {}
     for team in teams:
-        team_order.update({team: random.sample(uuids, len(uuids))})
+        team_order.update({team: random.sample(uuids, len(problems))})
     del team
 
     with open(orderfile_path, 'w') as orderfile:
         orderfile.write(json.dumps(team_order, indent=4))
+
+# Validate team_order
+if len(set(team_order.keys())) != len(team_order):
+    print(f'File "{orderfile_path}" contains duplicate teams')
+    exit()
+if set(team_order.keys()) != set(teams):
+    print(f'File "{orderfile_path}" does not contain all teams')
+    exit()
+for order_for_team in team_order.values():
+    print(order_for_team)
+    for uuid in order_for_team:
+        if uuid not in uuids:
+            print(f'File "{orderfile_path}" contains uuid "{uuid}" which does associated with a room')
+            exit()
+if len(set(map(len, team_order.values()))) != 1:
+    print(f'File "{orderfile_path}" does not have same number of uuids for all teams')
+    exit()
+if len(list(team_order.values())[0]) != len(problems):
+    print(f'File "{orderfile_path}" does not have same number of uuids as the number of problems in the config')
+    exit()
 
 
 @app.route('/')
@@ -76,9 +101,7 @@ def hello():
         problem_name = problem_data['name']
         problem_desc = problem_data['description']
 
-        extra = {'team': team, 'team_order': team_order, 'team_state': team_state}
-
-    return render_template('problem.html', competitionName=competition_name, name=problem_name, description=problem_desc, extra=extra)
+    return render_template('problem.html', competitionName=competition_name, name=problem_name, description=problem_desc)
 
     # return render_template('index.html', competitionName=competition_name)
 

@@ -17,5 +17,6 @@ def generateCode(room: str, unusedRooms: list[str]):
 
     return caesar
 
+
 if __name__ == '__main__':
     print(generateCode('AB123', []))

@@ -15,5 +15,6 @@ print(s[::-3])
 """
     return kod
 
+
 if __name__ == '__main__':
-    print(generateCode('FL61', []))
+    print(generateCode('AB123', []))

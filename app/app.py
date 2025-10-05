@@ -26,7 +26,7 @@ logging.getLogger().addHandler(logging.StreamHandler())
 
 with open(configfile_path, 'r') as config_file:
     config_data: dict[str, Any] = yaml.load(config_file, yaml.Loader)
-    logger.info(f'{config_data = }')
+    logger.info(f'{config_data=}')
 
     seed: str = config_data['seed']
     competition_name: str = config_data['competition-name']
@@ -39,28 +39,30 @@ with open(configfile_path, 'r') as config_file:
     random.seed(seed)
 
     if len(rooms.keys()) < (len(problems) - 1):
-        logging.critical('There must be at least as many rooms as there are problems')
+        logging.critical(
+            'There must be at least as many rooms as there are problems')
         exit(1)
 
     team_order = {}
     for team in teams:
-        team_order.update({team: random.sample(list(rooms.values()), len(problems) - 1) + [list(final_room.values())[0]]})
+        team_order.update({team: random.sample(list(rooms.values()), len(
+            problems) - 1) + [list(final_room.values())[0]]})
     del team
 
     rooms[list(final_room.keys())[0]] = list(final_room.values())[0]
 
     uuids = list(rooms.values())
 
-if type(competition_name) != type(''):
+if not isinstance(competition_name, str):
     logging.critical('Config entry "competition-name" must be of type string')
     exit(1)
-if type(teams) != type([]):
+if not isinstance(teams, list):
     logging.critical('Config entry "teams" must be list of type list')
     exit(1)
 if len(teams) <= 0:
     logging.critical('Config entry "teams" contain at least one element')
     exit(1)
-if any([type(team) != type('') for team in teams]):
+if any([not isinstance(team, str) for team in teams]):
     logging.critical('Config entry "teams" elements must be of type string')
     exit(1)
 if len(set(rooms.keys())) != len(rooms):
@@ -70,7 +72,8 @@ if len(set(rooms.values())) != len(rooms):
     logging.critical('Config entry "rooms" must have unique uuids')
     exit(1)
 if len(set(rooms.keys()).intersection(set(unused_rooms))) > 0:
-    logging.critical('Config entry "unused_rooms" must only contain unused rooms')
+    logging.critical(
+        'Config entry "unused_rooms" must only contain unused rooms')
     exit(1)
 if len(final_room) != 1:
     logging.critical('Config entry "final_room" must contain exactly one room')
@@ -99,9 +102,11 @@ if set(team_state.keys()) != set(teams):
     logger.critical(f'File "{statefile_path}" does not contain all teams')
     exit(1)
 
+
 def storeState():
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
+
 
 @app.route('/')
 def hello():
@@ -112,69 +117,81 @@ def hello():
 
     team = request.cookies.get('team')
 
-    if(team_state[team] >= len(problems)):
+    if (team_state[team] >= len(problems)):
         return 'Slut'
 
     problem = problems[team_state[team]]
     if 'problem' in request.args:
         problem = request.args['problem']
 
-    with open(os.path.join(problems_path, problem, 'problem.yaml'), 'r') as problem_file:
+    with open(os.path.join(
+            problems_path, problem, 'problem.yaml'), 'r') as problem_file:
         problem_data: dict[str, Any] = yaml.load(problem_file, yaml.Loader)
 
         problem_type: str = problem_data['type']
 
     def generateCode():
-        problemModule = importlib.import_module(f'problems.{problems[problems.index(problem)]}.generate', package=None)
+        problemModule = importlib.import_module(
+            f'problems.{problems[problems.index(problem)]}.generate',
+            package=None)
         roomUuid: str = team_order[team][team_state[team]]
-        correctRoom: str = next(room for room in rooms if rooms[room] == roomUuid)
+        correctRoom: str = next(
+            room for room in rooms if rooms[room] == roomUuid)
         return problemModule.generateCode(correctRoom, unused_rooms)
 
     match problem_type:
         case 'pt_what-is-code-doing':
             code = generateCode()
             return render_template('problem.show-code.html',
-                                    competitionName=competition_name,
-                                    problem=problem,
-                                    data=problem_data,
-                                    code=code)
+                                   competitionName=competition_name,
+                                   problem=problem,
+                                   data=problem_data,
+                                   code=code)
 
         case 'pt_text':
             code = generateCode()
             return render_template('problem.show-text.html',
-                                    competitionName=competition_name,
-                                    problem=problem,
-                                    data=problem_data,
-                                    code=code)
+                                   competitionName=competition_name,
+                                   problem=problem,
+                                   data=problem_data,
+                                   code=code)
 
         case 'pass-fail':
-            test_cases = set([file.split('.')[0] for file in os.listdir(os.path.join(problems_path, problem, 'data', 'sample'))])
+            test_cases = set([file.split('.')[0] for file in os.listdir(
+                os.path.join(problems_path, problem, 'data', 'sample'))])
             samples: list[tuple[str, str]] = []
             for test_case in test_cases:
-                with open(os.path.join(problems_path, problem, 'data', 'sample', f'{test_case}.in'), 'r') as in_file,\
-                     open(os.path.join(problems_path, problem, 'data', 'sample', f'{test_case}.ans'), 'r') as out_file:
+                with open(os.path.join(
+                    problems_path, problem, 'data', 'sample',
+                        f'{test_case}.in'), 'r') as in_file, \
+                        open(os.path.join(
+                            problems_path, problem, 'data', 'sample',
+                            f'{test_case}.ans'), 'r') as out_file:
                     samples.append((in_file.read(), out_file.read()))
 
             return render_template('problem.submit-code.html',
-                                    competitionName=competition_name,
-                                    problem=problem,
-                                    data=problem_data,
-                                    samples=samples)
+                                   competitionName=competition_name,
+                                   problem=problem,
+                                   data=problem_data,
+                                   samples=samples)
 
         case 'pt_input-text':
             return render_template('problem.submit-text.html',
-                                    competitionName=competition_name,
-                                    problem=problem,
-                                    data=problem_data)
+                                   competitionName=competition_name,
+                                   problem=problem,
+                                   data=problem_data)
 
-    logger.error(f'Unknown problem type: {problem_type = }')
+    logger.error(f'Unknown problem type: {problem_type=}')
 
     return abort(500, 'Unable to parse problem')
+
 
 @app.route('/login')
 def login():
     logger.debug(teams)
-    return render_template('login.html', competitionName=competition_name, teams=teams)
+    return render_template('login.html', competitionName=competition_name,
+                           teams=teams)
+
 
 @app.route('/admin')
 def admin():
@@ -185,6 +202,7 @@ def admin():
                            rooms=rooms,
                            teamState=team_state,
                            teamOrder=team_order)
+
 
 @app.route('/qr')
 def qr():
@@ -197,10 +215,12 @@ def qr():
         return abort(400, 'Invalid ID')
 
     # logger.debug(f'{team_order[team][team_state[team]] = }')
-    logger.debug(f'{team = }')
+    logger.debug(f'{team=}')
     # logger.debug(f'{team_order[team] = }')
     # logger.debug(f'{team_state[team] = }')
-    logger.debug(f'Expected ID: {team_order[team][team_state[team]]}. Code ID: {code_id}')
+    logger.debug(
+        f'Expected ID: {team_order[team][team_state[team]]}\
+        . Code ID: {code_id}')
 
     if team_order[team][team_state[team]] != code_id:
         return abort(400, 'Fel QR!')
@@ -210,10 +230,12 @@ def qr():
 
     return redirect('/')
 
-def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
-    if not test_cases: return True
 
-    if True: # Just pretend to do test
+def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
+    if not test_cases:
+        return True
+
+    if True:  # Just pretend to do test
         with NamedTemporaryFile(delete=False,
                                 dir=os.path.join(chrootdir_path, 'tmp'),
                                 suffix='.py') as temp_file:
@@ -253,19 +275,20 @@ def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
                                     text=True)
 
             if result.returncode != 0:
-                return json.dumps(('error_code', result.returncode))
+                return False
 
             if result.stdout.strip() != expected_output.strip():
-                return json.dumps(('error', "Output doesn't match testcase"))
+                return False
         os.remove(host_upload_path)
         return True
     else:
-        logger.debug(f'{file_data = }')
-        logger.debug(f'{test_cases = }')
-        logger.debug(f'{max_time = }')
+        logger.debug(f'{file_data=}')
+        logger.debug(f'{test_cases=}')
+        logger.debug(f'{max_time=}')
         import time
         time.sleep(random.random() * max_time)
         return random.choice([True, False])
+
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit():
@@ -275,32 +298,55 @@ def submit():
 
     team = request.cookies.get('team')
     if team_state[team] >= len(problems):
-        return json.dumps(('error', 'No more problems available for this team')), 400
+        return json.dumps(
+            ('error', 'No more problems available for this team')), 400
 
     problem = problems[team_state[team]]
 
-    with open(os.path.join(problems_path, problem, 'problem.yaml')) as config_file:
+    with open(os.path.join(
+            problems_path, problem, 'problem.yaml')) as config_file:
         problem_config_data = yaml.load(config_file, yaml.Loader)
-        max_time: int = problem_config_data['max_time'] if 'max_time' in problem_config_data else 5
+        try:
+            max_time: int = problem_config_data['max_time']
+        except KeyError:
+            max_time: int = 5
+
+    sample_test_cases_path = os.path.join(
+        problems_path, problem, 'data', 'sample')
+    secret_test_cases_path = os.path.join(
+        problems_path, problem, 'data', 'secret')
 
     sample_test_cases: list[tuple[str, str]] = []
-    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'sample')))/2)):
-        with open(os.path.join(problems_path, problem, 'data', 'sample', f'{i+1}.in')) as f_in, \
-             open(os.path.join(problems_path, problem, 'data', 'sample', f'{i+1}.ans')) as f_ans:
+    for i in range(int(len(os.listdir(sample_test_cases_path))/2)):
+        with open(
+            os.path.join(sample_test_cases_path,
+                         f'{i+1}.in')) as f_in, \
+                open(
+                    os.path.join(sample_test_cases_path,
+                                 f'{i+1}.ans')) as f_ans:
             sample_test_cases.append((f_in.read(), f_ans.read()))
+
     passes_sample = test_file(input_data, sample_test_cases, max_time)
 
     secret_test_cases: list[tuple[str, str]] = []
-    if os.path.exists(os.path.join(problems_path, problem, 'data', 'secret')):
-        for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'secret')))/2)):
-            with open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.in')) as f_in, \
-                open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.ans')) as f_ans:
+    if os.path.exists(secret_test_cases_path):
+        for i in range(int(len(os.listdir(secret_test_cases_path))/2)):
+            with open(
+                os.path.join(secret_test_cases_path,
+                             f'{i+1}.in')) as f_in, \
+                    open(
+                    os.path.join(secret_test_cases_path,
+                                 f'{i+1}.ans')) as f_ans:
                 secret_test_cases.append((f_in.read(), f_ans.read()))
+
     passes_secret = test_file(input_data, secret_test_cases, max_time)
 
+    for name, uuid in rooms.items():
+        if uuid == team_order[team][team_state[team]]:
+            next_room = ''.join(name)
     if passes_sample is True and passes_secret is True:
         return json.dumps({
-            'room': ''.join([name for name, uuid in rooms.items() if uuid == team_order[team][team_state[team]]]),
+            'room': next_room,
             'sample': passes_sample,
             'secret': passes_secret
         })
@@ -309,6 +355,7 @@ def submit():
             'sample': passes_sample,
             'secret': passes_secret
         })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6969, debug=True)

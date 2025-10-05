@@ -4,5 +4,6 @@ print(''.join(reversed(s)))
 """
     return kod
 
+
 if __name__ == '__main__':
     print(generateCode('AB123', []))

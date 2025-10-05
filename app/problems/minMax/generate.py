@@ -9,5 +9,6 @@ print(salar[i])
 """
     return kod
 
+
 if __name__ == '__main__':
-    print(generateCode('FL61', ["FL64", "FL61", "FL62", "FL63", "KD2", "ML1", "ML2", "SB-M500", "SB-G311", "Pascal", "ML14", "ML16"]))
+    print(generateCode('AB123', ['CD456', 'EF789']))

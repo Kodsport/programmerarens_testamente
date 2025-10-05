@@ -20,15 +20,25 @@ rooms:
   room10: a39a6f4f-01e6-4bf0-9b9e-4d1c2fd94a1d
   room11: 5e5547aa-dc06-45ae-b816-2f3a1a49cd73
   room12: 08f43fe7-fadc-4c25-9530-f78afd37fb35
-final-room:
   room13: 974a384e-f297-4449-aa51-e14739e1bbb8
+  room14: 5ce21395-c84e-493f-84fb-c0105bc244ff
+  room15: 03e9b42a-9cdd-4b6e-b1b6-5ea2c5af6625
+  room16: 0cb3f8a8-f801-4d4c-ba2c-b83efaec4d24
+  room17: 863a09f0-f5d4-42c8-89e0-2f3da5c448b6
+  room18: 9cb4fbb9-e38b-4846-9e9c-4c9adc65acd9
+  room19: 75219ea3-6f7c-422c-a1c1-28757d348f62
+final-room:
+  room20: 5df7c623-4e4e-4d85-b678-e92b87407ee2
 unused-rooms:
-  - room14
-  - room15
-  - room16
-  - room17
-  - room18
-  - room19
+  - room21
+  - room22
+  - room23
+  - room24
+  - room25
+  - room26
+  - room27
+  - room28
+  - room29
 problems:
   - template
   - minMax

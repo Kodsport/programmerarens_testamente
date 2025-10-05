@@ -7,7 +7,7 @@ import importlib
 import logging
 from tempfile import NamedTemporaryFile
 from typing import Any
-from flask import Flask, render_template, url_for, abort, redirect, request, Response
+from flask import Flask, render_template, url_for, abort, redirect, request, make_response
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def isAdmin():
 @app.route('/admin')
 def admin():
     if not isAdmin():
-        resp = Response()
+        resp = make_response()
         resp.headers.add('WWW-Authenticate', 'Basic realm="Admin login"')
         resp.status_code = 401
         return resp
@@ -143,9 +143,10 @@ def admin():
 
 @app.route('/admin/logout')
 def admin_logout():
-    resp = Response()
+    resp = make_response()
     resp.headers.add('WWW-Authenticate', 'Basic realm="Admin login"')
     resp.status_code = 401
+    resp.data = '<a href="/admin">admin</a>'
     return resp
 
 @app.route('/')
@@ -184,6 +185,7 @@ def hello():
             code = generateCode()
             return render_template('problem.show-code.html',
                                    competitionName=competition_name,
+                                   team=team,
                                    problem=problem,
                                    data=problem_data,
                                    code=code)
@@ -192,6 +194,7 @@ def hello():
             code = generateCode()
             return render_template('problem.show-text.html',
                                    competitionName=competition_name,
+                                   team=team,
                                    problem=problem,
                                    data=problem_data,
                                    code=code)
@@ -211,6 +214,7 @@ def hello():
 
             return render_template('problem.submit-code.html',
                                    competitionName=competition_name,
+                                   team=team,
                                    problem=problem,
                                    data=problem_data,
                                    samples=samples)
@@ -218,6 +222,7 @@ def hello():
         case 'pt_input-text':
             return render_template('problem.submit-text.html',
                                    competitionName=competition_name,
+                                   team=team,
                                    problem=problem,
                                    data=problem_data)
 
@@ -335,56 +340,75 @@ def submit():
     with open(os.path.join(
             problems_path, problem, 'problem.yaml')) as config_file:
         problem_config_data = yaml.load(config_file, yaml.Loader)
-        try:
-            max_time: int = problem_config_data['max_time']
-        except KeyError:
-            max_time: int = 5
 
-    sample_test_cases_path = os.path.join(
-        problems_path, problem, 'data', 'sample')
-    secret_test_cases_path = os.path.join(
-        problems_path, problem, 'data', 'secret')
-
-    sample_test_cases: list[tuple[str, str]] = []
-    for i in range(int(len(os.listdir(sample_test_cases_path))/2)):
-        with open(
-            os.path.join(sample_test_cases_path,
-                         f'{i+1}.in')) as f_in, \
-                open(
-                    os.path.join(sample_test_cases_path,
-                                 f'{i+1}.ans')) as f_ans:
-            sample_test_cases.append((f_in.read(), f_ans.read()))
-
-    passes_sample = test_file(input_data, sample_test_cases, max_time)
-
-    secret_test_cases: list[tuple[str, str]] = []
-    if os.path.exists(secret_test_cases_path):
-        for i in range(int(len(os.listdir(secret_test_cases_path))/2)):
-            with open(
-                os.path.join(secret_test_cases_path,
-                             f'{i+1}.in')) as f_in, \
-                    open(
-                    os.path.join(secret_test_cases_path,
-                                 f'{i+1}.ans')) as f_ans:
-                secret_test_cases.append((f_in.read(), f_ans.read()))
-
-    passes_secret = test_file(input_data, secret_test_cases, max_time)
+        problem_type: str = problem_config_data['type']
 
     for name, uuid in rooms.items():
         if uuid == team_order[team][team_state[team]]:
             next_room = ''.join(name)
-    if passes_sample is True and passes_secret is True:
-        return json.dumps({
-            'room': next_room,
-            'sample': passes_sample,
-            'secret': passes_secret
-        })
-    else:
-        return json.dumps({
-            'sample': passes_sample,
-            'secret': passes_secret
-        })
 
+    match problem_type:
+        case 'pass-fail':
+            try:
+                max_time: int = problem_config_data['max_time']
+            except KeyError:
+                max_time: int = 5
+
+            sample_test_cases_path = os.path.join(
+                problems_path, problem, 'data', 'sample')
+            secret_test_cases_path = os.path.join(
+                problems_path, problem, 'data', 'secret')
+
+            sample_test_cases: list[tuple[str, str]] = []
+            for i in range(int(len(os.listdir(sample_test_cases_path))/2)):
+                with open(
+                    os.path.join(sample_test_cases_path,
+                                f'{i+1}.in')) as f_in, \
+                        open(
+                            os.path.join(sample_test_cases_path,
+                                        f'{i+1}.ans')) as f_ans:
+                    sample_test_cases.append((f_in.read(), f_ans.read()))
+
+            passes_sample = test_file(input_data, sample_test_cases, max_time)
+
+            secret_test_cases: list[tuple[str, str]] = []
+            if os.path.exists(secret_test_cases_path):
+                for i in range(int(len(os.listdir(secret_test_cases_path))/2)):
+                    with open(
+                        os.path.join(secret_test_cases_path,
+                                    f'{i+1}.in')) as f_in, \
+                            open(
+                            os.path.join(secret_test_cases_path,
+                                        f'{i+1}.ans')) as f_ans:
+                        secret_test_cases.append((f_in.read(), f_ans.read()))
+
+            passes_secret = test_file(input_data, secret_test_cases, max_time)
+
+            if passes_sample is True and passes_secret is True:
+                return json.dumps({
+                    'room': next_room,
+                    'sample': passes_sample,
+                    'secret': passes_secret
+                })
+            else:
+                return json.dumps({
+                    'sample': passes_sample,
+                    'secret': passes_secret
+                })
+
+        case 'pt_input-text':
+            correct = [option.strip().lower() for option in problem_config_data['correct']]
+            if input_data.strip().lower() in correct:
+                return json.dumps({
+                    'room': next_room
+                })
+            return json.dumps({
+                'error': 'incorrect'
+            })
+
+    logger.error(f'Unknown problem type: {problem_type=}')
+
+    return abort(500, 'Unable to parse problem')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6969, debug=True)

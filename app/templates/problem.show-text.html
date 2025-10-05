@@ -22,6 +22,7 @@
 </head>
 <body>
     <h1>{{ data['name'] }}</h1>
+    <a href="/" onclick="document.cookie = `team=;path=/;max-age=0`">Lag {{ team }} - Logga ut</a>
     <p class="text">{{ data['description'] }}</p>
     <code>{{ code }}</code>
 </body>

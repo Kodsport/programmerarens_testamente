@@ -113,17 +113,16 @@
 </head>
 <body>
     <h1>{{ data['name'] }}</h1>
+    <a href="/" onclick="document.cookie = `team=;path=/;max-age=0`">Lag {{ team }} - Logga ut</a>
     <p class="text">{{ data['description'] }}</p>
 
     <section id="samples">
     {% for sample in samples %}
-        <p>
-            <h2>Testfall {{ loop.index }}</h2>
-            <h3>Input</h3>
-            <code>{{ sample[0] }}</code>
-            <h3>Output</h3>
-            <code>{{ sample[1] }}</code>
-        </p>
+        <h2>Testfall {{ loop.index }}</h2>
+        <h3>Input</h3>
+        <code>{{ sample[0] }}</code>
+        <h3>Output</h3>
+        <code>{{ sample[1] }}</code>
     {% endfor %}
     </section>
 

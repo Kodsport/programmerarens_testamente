@@ -31,13 +31,22 @@
             white-space: pre;
         }
     </style>
-</head>
+    <script>
+        function printQRs() {
+            const newWindow = window.open("", null, "status=yes,toolbar=no,menubar=no,location=no");
 
+            const templateQr = document.querySelector('#template-qr');
+            const printPageCode = templateQr.content.firstElementChild.outerHTML;
+
+            newWindow.document.write(printPageCode);
+        }
+    </script>
+</head>
 <body>
     <h1>Admin - {{ competitionName }}</h1>
 
     {% if hasAuth %}
-    <a href="/admin/logout">Logga ut</a>
+    <button onclick="location.href = `${location.protocol}//a@${location.host}${location.pathname}`">Logga ut</button>
     {% endif %}
 
     <section id="scoreboard">
@@ -81,13 +90,113 @@
         </ol>
     </section>
     <section id="rooms">
-        <h2>Rooms</h2>
+        <h2>Rooms <button onclick="printQRs()">Print QR codes</button></h2>
         <ul>
             {%for room in rooms%}
             <li title="{{ rooms[room] }}">{{ room }} <a href="/qr?id={{ rooms[room] }}">QR-länk</a></li>
             {%endfor%}
         </ul>
     </section>
+
+    <template id="template-qr">
+        <main>
+            <script src="{{ url_for('static', filename='qr.js') }}"></script>
+            <style>
+                :root {
+                    width: 210mm;
+                    background-color: white;
+                    border: 1mm solid red;
+                    color-scheme: light;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                section {
+                    width: 210mm;
+                    border-collapse: collapse;
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    grid-auto-rows: calc(297mm / 2 - 1mm);
+                    text-align: center;
+                }
+
+                section > div {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 4mm;
+                }
+                section > div div {
+                    width: 50%;
+                    height: min-content;
+                }
+                section > div h2 {
+                    font-size: 2mm;
+                    font-family: monospace;
+                }
+
+                @media print {
+                    :root {
+                        border: none;
+                    }
+                }
+
+                @page {
+                    size: a4;
+                    margin: 0;
+                }
+
+                body {
+                    margin: 0px;
+                }
+            </style>
+
+            <template id="template-qr-box">
+                <div>
+                    <div class="qrcode"></div>
+                    <h2></h2>
+                </div>
+            </template>
+
+            <section>
+                <h1>Page 1</h1>
+            </section>
+            <script type="text/javascript">
+                const uuids = [
+                    {% for room in rooms %}
+                    '{{ rooms[room] }}',
+                    {% endfor %}
+                ];
+
+                const qrBoxTemplate = document.querySelector('#template-qr-box');
+
+                const qrBoxElems = uuids.map(uuid => {
+                    const newElem = qrBoxTemplate.content.firstElementChild.cloneNode(true);
+
+                    const qrcode = new QRCode(newElem.querySelector('.qrcode'), {
+                        width : 100,
+                        height : 100,
+                        useSVG: true
+                    });
+                    qrcode.makeCode(`${window.origin}/qr?id=${uuid}`);
+                    newElem.querySelector('h2').textContent = uuid;
+
+                    return newElem;
+                });
+
+                console.log(qrBoxElems);
+
+                document.querySelector('section').replaceChildren(...qrBoxElems);
+
+                setTimeout(() => {
+                    window.print();
+                }, 100);
+            </script>
+        </main>
+    </template>
 
     <details open>
         <summary>Advanced</summary>

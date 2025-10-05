@@ -1,0 +1,8 @@
+name: Name That Sort
+type: pt_input-text
+description: Vad heter den sorteringsalgoritm som flyttar med det största talet åt höger under varje varv
+source: Programmerarens Testamente
+author: AndreasLonn
+correct:
+  - bubble sort
+  - bubblesort

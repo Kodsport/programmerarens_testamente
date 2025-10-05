@@ -31,6 +31,7 @@
 </head>
 <body>
     <h1>{{ data['name'] }}</h1>
+    <a href="/" onclick="document.cookie = `team=;path=/;max-age=0`">Lag {{ team }} - Logga ut</a>
     <h2>{{ data['description'] }}</h2>
     <pre id="highlighting" aria-hidden="true"><code class="language-python" id="highlighting-content">{{ code }}</code></pre>
 </body>

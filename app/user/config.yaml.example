@@ -1,5 +1,6 @@
 seed: 1234
 competition-name: "Programmerarens Testamente"
+admin-password: 'password123'
 teams:
   - Kasset
   - Vinyl

@@ -7,7 +7,7 @@ import importlib
 import logging
 from tempfile import NamedTemporaryFile
 from typing import Any
-from flask import Flask, render_template, abort, request, redirect, url_for
+from flask import Flask, render_template, url_for, abort, redirect, request, Response
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +30,13 @@ with open(configfile_path, 'r') as config_file:
 
     seed: str = config_data['seed']
     competition_name: str = config_data['competition-name']
+    admin_password: str = config_data['admin-password']
     teams: list = config_data['teams']
     rooms: dict[str, str] = config_data['rooms']
     final_room: dict[str] = config_data['final-room']
     unused_rooms: list[str] = config_data['unused-rooms']
     problems: list = config_data['problems']
+    override_nsjail: bool = config_data['override-nsjail'] if 'override-nsjail' in config_data else False
 
     random.seed(seed)
 
@@ -108,6 +110,44 @@ def storeState():
         statefile.write(json.dumps(team_state, indent=4))
 
 
+def isAdmin():
+    if not admin_password: return True
+
+    userAuth = request.authorization
+    logger.info(f'Admin access: {userAuth = }')
+
+    if not userAuth:
+        return False
+    if userAuth.type != 'basic':
+        return False
+    if userAuth.parameters.get('password', '') != admin_password:
+        return False
+    return True
+
+@app.route('/admin')
+def admin():
+    if not isAdmin():
+        resp = Response()
+        resp.headers.add('WWW-Authenticate', 'Basic realm="Admin login"')
+        resp.status_code = 401
+        return resp
+
+    return render_template('admin.html',
+                           competitionName=competition_name,
+                           teams=teams,
+                           problems=problems,
+                           rooms=rooms,
+                           teamState=team_state,
+                           teamOrder=team_order,
+                           hasAuth=bool(admin_password))
+
+@app.route('/admin/logout')
+def admin_logout():
+    resp = Response()
+    resp.headers.add('WWW-Authenticate', 'Basic realm="Admin login"')
+    resp.status_code = 401
+    return resp
+
 @app.route('/')
 def hello():
     if 'team' not in request.cookies:
@@ -121,7 +161,7 @@ def hello():
         return 'Slut'
 
     problem = problems[team_state[team]]
-    if 'problem' in request.args:
+    if isAdmin() and 'problem' in request.args:
         problem = request.args['problem']
 
     with open(os.path.join(
@@ -192,18 +232,6 @@ def login():
     return render_template('login.html', competitionName=competition_name,
                            teams=teams)
 
-
-@app.route('/admin')
-def admin():
-    return render_template('admin.html',
-                           competitionName=competition_name,
-                           teams=teams,
-                           problems=problems,
-                           rooms=rooms,
-                           teamState=team_state,
-                           teamOrder=team_order)
-
-
 @app.route('/qr')
 def qr():
     team = request.cookies.get('team')
@@ -235,7 +263,7 @@ def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
     if not test_cases:
         return True
 
-    if True:  # Just pretend to do test
+    if not override_nsjail:
         with NamedTemporaryFile(delete=False,
                                 dir=os.path.join(chrootdir_path, 'tmp'),
                                 suffix='.py') as temp_file:
@@ -287,6 +315,7 @@ def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
         logger.debug(f'{max_time=}')
         import time
         time.sleep(random.random() * max_time)
+        # Just pretend to do test
         return random.choice([True, False])
 
 

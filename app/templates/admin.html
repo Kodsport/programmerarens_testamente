@@ -36,6 +36,10 @@
 <body>
     <h1>Admin - {{ competitionName }}</h1>
 
+    {% if hasAuth %}
+    <a href="/admin/logout">Logga ut</a>
+    {% endif %}
+
     <section id="scoreboard">
         <h2>Scoreboard</h2>
         <table>

@@ -36,7 +36,10 @@ with open(configfile_path, 'r') as config_file:
     final_room: dict[str] = config_data['final-room']
     unused_rooms: list[str] = config_data['unused-rooms']
     problems: list = config_data['problems']
-    override_nsjail: bool = config_data['override-nsjail'] if 'override-nsjail' in config_data else False
+    try:
+        override_nsjail: bool = config_data['override-nsjail']
+    except KeyError:
+        override_nsjail: bool = False
 
     random.seed(seed)
 
@@ -111,10 +114,11 @@ def storeState():
 
 
 def isAdmin():
-    if not admin_password: return True
+    if not admin_password:
+        return True
 
     userAuth = request.authorization
-    logger.info(f'Admin access: {userAuth = }')
+    logger.info(f'Admin access: {userAuth=}')
 
     if not userAuth:
         return False
@@ -123,6 +127,7 @@ def isAdmin():
     if userAuth.parameters.get('password', '') != admin_password:
         return False
     return True
+
 
 @app.route('/admin')
 def admin():
@@ -141,6 +146,7 @@ def admin():
                            teamOrder=team_order,
                            hasAuth=bool(admin_password))
 
+
 @app.route('/admin/logout')
 def admin_logout():
     resp = make_response()
@@ -148,6 +154,7 @@ def admin_logout():
     resp.status_code = 401
     resp.data = '<a href="/admin">admin</a>'
     return resp
+
 
 @app.route('/')
 def hello():
@@ -236,6 +243,7 @@ def login():
     logger.debug(teams)
     return render_template('login.html', competitionName=competition_name,
                            teams=teams)
+
 
 @app.route('/qr')
 def qr():
@@ -363,10 +371,10 @@ def submit():
             for i in range(int(len(os.listdir(sample_test_cases_path))/2)):
                 with open(
                     os.path.join(sample_test_cases_path,
-                                f'{i+1}.in')) as f_in, \
+                                 f'{i+1}.in')) as f_in, \
                         open(
                             os.path.join(sample_test_cases_path,
-                                        f'{i+1}.ans')) as f_ans:
+                                         f'{i+1}.ans')) as f_ans:
                     sample_test_cases.append((f_in.read(), f_ans.read()))
 
             passes_sample = test_file(input_data, sample_test_cases, max_time)
@@ -376,10 +384,10 @@ def submit():
                 for i in range(int(len(os.listdir(secret_test_cases_path))/2)):
                     with open(
                         os.path.join(secret_test_cases_path,
-                                    f'{i+1}.in')) as f_in, \
+                                     f'{i+1}.in')) as f_in, \
                             open(
                             os.path.join(secret_test_cases_path,
-                                        f'{i+1}.ans')) as f_ans:
+                                         f'{i+1}.ans')) as f_ans:
                         secret_test_cases.append((f_in.read(), f_ans.read()))
 
             passes_secret = test_file(input_data, secret_test_cases, max_time)
@@ -397,7 +405,8 @@ def submit():
                 })
 
         case 'pt_input-text':
-            correct = [option.strip().lower() for option in problem_config_data['correct']]
+            correct = [option.strip().lower()
+                       for option in problem_config_data['correct']]
             if input_data.strip().lower() in correct:
                 return json.dumps({
                     'room': next_room
@@ -409,6 +418,7 @@ def submit():
     logger.error(f'Unknown problem type: {problem_type=}')
 
     return abort(500, 'Unable to parse problem')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6969, debug=True)

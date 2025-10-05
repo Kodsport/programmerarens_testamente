@@ -1,0 +1,5 @@
+name: Hitta Hörnet
+type: pass-fail
+description: Du får tre hörn av en rektangel och du vill hitta det sista hörnet. Indata består av tre rader två heltalskoordinater på varje rad; en x-koordinat och en y-koordinat. Skriv då ut x- och y-koordinaten på samma rad, separerade med mellanslag.
+source: Programmeringsläger för Nybörjare 2025
+author: Jackryd

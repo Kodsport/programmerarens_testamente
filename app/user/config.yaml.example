@@ -43,3 +43,5 @@ problems:
   - siffersumma
   - sortering
   - nameTheSort
+  - 2sum
+  - hittaHornet

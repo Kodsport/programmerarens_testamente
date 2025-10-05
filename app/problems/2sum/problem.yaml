@@ -1,0 +1,5 @@
+name: 2sum
+type: pass-fail
+description: Du får en sorterad lista på tal och ska hitta två olika tal från listan vars summa blir det efterfrågade talet. Indatan består av tre delar. Först ett heltal som är det efterfrågade talet. Därefter kommer ett heltal N som beskriver hur många tal som följer. Därefter följer N heltal, lägst först. Skriv ut (i storleksordning) de två tal vars summa blir det efterfrågade talet.
+source: Programmeringsläger för Nybörjare 2025
+author: Jackryd

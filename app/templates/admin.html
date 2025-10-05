@@ -52,7 +52,7 @@
     <h1>Admin - {{ competitionName }}</h1>
 
     {% if hasAuth %}
-    <button onclick="location.href = `${location.protocol}//a@${location.host}${location.pathname}`">Logga ut</button>
+    <button onclick="location.href = `${location.protocol}//a@${location.host}${location.pathname}`">Log out</button>
     {% endif %}
 
     <section id="scoreboard">
@@ -83,7 +83,7 @@
         <h2>Teams</h2>
         <ul>
             {%for team in teams%}
-            <li>{{ team }}</li>
+            <li>{{ team }} | Next: {{ teamOrder[team][teamState[team] | length - 1] | to_room }}</li>
             {%endfor%}
         </ul>
     </section>
@@ -204,7 +204,7 @@
         </main>
     </template>
 
-    <details open>
+    <details>
         <summary>Advanced</summary>
         <section style="display: flex; flex-direction: column; gap: 1em;">
             <code>teams: {{ teams | tojson(2) }}</code>

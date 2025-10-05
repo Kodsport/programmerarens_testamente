@@ -114,6 +114,9 @@ def storeState():
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
 
+@app.template_filter('to_room')
+def to_room(uuid):
+    return next(room for room in rooms if rooms[room] == uuid)
 
 def isAdmin():
     if not admin_password:
@@ -186,8 +189,7 @@ def hello():
             f'problems.{problems[problems.index(problem)]}.generate',
             package=None)
         roomUuid: str = team_order[team][len(team_state[team]) - 1]
-        correctRoom: str = next(
-            room for room in rooms if rooms[room] == roomUuid)
+        correctRoom: str = to_room(roomUuid)
         return problemModule.generateCode(correctRoom, unused_rooms)
 
     match problem_type:
@@ -370,9 +372,7 @@ def submit():
 
         problem_type: str = problem_config_data['type']
 
-    for name, uuid in rooms.items():
-        if uuid == team_order[team][len(team_state[team]) - 1]:
-            next_room = ''.join(name)
+    next_room = to_room(team_order[team][len(team_state[team]) - 1])
 
     match problem_type:
         case 'pass-fail':

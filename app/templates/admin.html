@@ -83,7 +83,7 @@
         <h2>Teams</h2>
         <ul>
             {%for team in teams%}
-            <li>{{ team }} | Next: {{ teamOrder[team][teamState[team] | length - 1] | to_room }}</li>
+            <li>{{ team }}{% if (teamState[team] | length - 1) < (teamOrder[team] | length) %} | Next: {{ teamOrder[team][teamState[team] | length - 1] | to_room }}{% endif %}</li>
             {%endfor%}
         </ul>
     </section>

@@ -171,12 +171,14 @@ def hello():
 
     team = request.cookies.get('team')
 
-    if ((len(team_state[team]) - 1) >= len(problems)):
-        return 'Slut'
-
-    problem = problems[len(team_state[team]) - 1]
+    problem_override = False
     if isAdmin() and 'problem' in request.args:
         problem = request.args['problem']
+        problem_override = True
+    else:
+        if ((len(team_state[team]) - 1) >= len(problems)):
+            return 'Inga fler problem'
+        problem = problems[len(team_state[team]) - 1]
 
     with open(os.path.join(
             problems_path, problem, 'problem.yaml'), 'r') as problem_file:
@@ -188,7 +190,10 @@ def hello():
         problemModule = importlib.import_module(
             f'problems.{problems[problems.index(problem)]}.generate',
             package=None)
-        roomUuid: str = team_order[team][len(team_state[team]) - 1]
+        try:
+            roomUuid: str = team_order[team][len(team_state[team]) - 1]
+        except IndexError:
+            roomUuid = team_order[team][-1]
         correctRoom: str = to_room(roomUuid)
         return problemModule.generateCode(correctRoom, unused_rooms)
 
@@ -229,14 +234,16 @@ def hello():
                                    team=team,
                                    problem=problem,
                                    data=problem_data,
-                                   samples=samples)
+                                   samples=samples,
+                                   problemOverride=problem_override)
 
         case 'pt_input-text':
             return render_template('problem.submit-text.html',
                                    competitionName=competition_name,
                                    team=team,
                                    problem=problem,
-                                   data=problem_data)
+                                   data=problem_data,
+                                   problemOverride=problem_override)
 
     logger.error(f'Unknown problem type: {problem_type=}')
 
@@ -356,15 +363,18 @@ def submit():
         return json.dumps(('error', 'No file input!')), 400
 
     team = request.cookies.get('team')
-    if (len(team_state[team]) - 1) >= len(problems):
-        return json.dumps(
-            ('error', 'No more problems available for this team')), 400
 
-    team_state[team][-1]['timestamp'] = int(time.time())
-    team_state[team][-1]['attempts'] += 1
-    storeState()
+    if isAdmin() and 'problem' in request.args:
+        problem = request.args['problem']
+    else:
+        if (len(team_state[team]) - 1) >= len(problems):
+            return json.dumps(
+                ('error', 'No more problems available for this team')), 400
+        problem = problems[len(team_state[team]) - 1]
 
-    problem = problems[len(team_state[team]) - 1]
+        team_state[team][-1]['timestamp'] = int(time.time())
+        team_state[team][-1]['attempts'] += 1
+        storeState()
 
     with open(os.path.join(
             problems_path, problem, 'problem.yaml')) as config_file:
@@ -372,7 +382,10 @@ def submit():
 
         problem_type: str = problem_config_data['type']
 
-    next_room = to_room(team_order[team][len(team_state[team]) - 1])
+    try:
+        next_room = to_room(team_order[team][len(team_state[team]) - 1])
+    except IndexError:
+        next_room = to_room(team_order[team][-1])
 
     match problem_type:
         case 'pass-fail':

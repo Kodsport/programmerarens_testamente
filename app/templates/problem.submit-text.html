@@ -91,7 +91,7 @@
             const formData = new FormData(event.target);
             dialogWaiting.showModal();
 
-            await fetch('/api/submit_code', {
+            await fetch('/api/submit_code{% if problemOverride %}?problem={{ problem }}{% endif %}', {
                 method: 'POST',
                 body: formData
             }).then(async response => {

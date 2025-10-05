@@ -92,6 +92,7 @@ def hello():
             code = generateCode()
             return render_template('problem.show-code.html',
                                     competitionName=competition_name,
+                                    problem=problem,
                                     data=problem_data,
                                     code=code)
 
@@ -99,6 +100,7 @@ def hello():
             code = generateCode()
             return render_template('problem.show-text.html',
                                     competitionName=competition_name,
+                                    problem=problem,
                                     data=problem_data,
                                     code=code)
 
@@ -110,6 +112,7 @@ def hello():
 
             return render_template('problem.submit-code.html',
                                     competitionName=competition_name,
+                                    problem=problem,
                                     data=problem_data,
                                     input=input_data,
                                     output=output_data)
@@ -117,6 +120,7 @@ def hello():
         case 'pt_input-text':
             return render_template('problem.submit-text.html',
                                     competitionName=competition_name,
+                                    problem=problem,
                                     data=problem_data)
 
     logger.error(f'Unknown problem type: {problem_type = }')
@@ -162,90 +166,101 @@ def qr():
 
     return redirect('/')
 
-def test_file(file_data, test_cases: list, max_time: int):
-    with NamedTemporaryFile(delete=False,
-                            dir=os.path.join(chrootdir_path, 'tmp'),
-                            suffix='.py') as temp_file:
-        host_upload_path = temp_file.name
-        jail_upload_path = os.path.join(
-            '/tmp', os.path.basename(temp_file.name))
-        temp_file.write(file_data.encode())
-    os.chmod(host_upload_path, 0o644)
+def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
+    if True: # Just pretend to do test
+        with NamedTemporaryFile(delete=False,
+                                dir=os.path.join(chrootdir_path, 'tmp'),
+                                suffix='.py') as temp_file:
+            host_upload_path = temp_file.name
+            jail_upload_path = os.path.join(
+                '/tmp', os.path.basename(temp_file.name))
+            temp_file.write(file_data.encode())
+        os.chmod(host_upload_path, 0o644)
 
-    for input_text, expected_output in test_cases:
-        if os.environ.get('AM_I_A_DOCKER_CONTIANER', False):
-            command = ["./nsjail"]
-        else:
-            command = ["sudo", "./nsjail"]
+        for input_text, expected_output in test_cases:
+            if os.environ.get('AM_I_A_DOCKER_CONTIANER', False):
+                command = ['./nsjail']
+            else:
+                command = ['sudo', './nsjail']
 
-        command.extend([
-            "-Mo",
-            "-q",
-            "--disable_clone_newns",
-            "--disable_clone_newuser",
-            "--disable_clone_newpid",
-            "--disable_clone_newcgroup",
-            "--disable_clone_newuts",
-            "--disable_clone_newipc",
-            "--disable_clone_newnet",
-            "--rlimit_cpu", str(max_time),
-            "--chroot", chrootdir_path,
-            "--",
-            "/usr/bin/python3",
-            "-u",
-            jail_upload_path
-        ])
+            command.extend([
+                '-Mo',
+                '-q',
+                '--disable_clone_newns',
+                '--disable_clone_newuser',
+                '--disable_clone_newpid',
+                '--disable_clone_newcgroup',
+                '--disable_clone_newuts',
+                '--disable_clone_newipc',
+                '--disable_clone_newnet',
+                '--rlimit_cpu', str(max_time),
+                '--chroot', chrootdir_path,
+                '--',
+                '/usr/bin/python3',
+                '-u',
+                jail_upload_path
+            ])
 
-        result = subprocess.run(command,
-                                input=input_text,
-                                capture_output=True,
-                                text=True)
+            result = subprocess.run(command,
+                                    input=input_text,
+                                    capture_output=True,
+                                    text=True)
 
-        if result.returncode != 0:
-            return json.dumps(("error_code", result.returncode))
+            if result.returncode != 0:
+                return json.dumps(('error_code', result.returncode))
 
-        if result.stdout.strip() != expected_output.strip():
-            return json.dumps(("error", "Output doesn't match testcase"))
-    os.remove(host_upload_path)
-    return True
+            if result.stdout.strip() != expected_output.strip():
+                return json.dumps(('error', "Output doesn't match testcase"))
+        os.remove(host_upload_path)
+        return True
+    else:
+        logger.debug(f'{file_data = }')
+        logger.debug(f'{test_cases = }')
+        logger.debug(f'{max_time = }')
+        import time
+        time.sleep(random.random() * max_time)
+        return random.choice([True, False])
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit():
     input_data = request.form.get('inputData')
+    if not input_data:
+        return json.dumps(('error', 'No file input!')), 400
+
     team = request.cookies.get('team')
     if team_state[team] >= len(problems):
-        return json.dumps(("error", "No more problems available for this team")), 400
+        return json.dumps(('error', 'No more problems available for this team')), 400
 
     problem = problems[team_state[team]]
 
-    with open(os.path.join(problems_path, problem, "problem.yaml")) as config_file:
+    with open(os.path.join(problems_path, problem, 'problem.yaml')) as config_file:
         problem_config_data = yaml.load(config_file, yaml.Loader)
-        max_time = problem_config_data['max_time']
+        max_time: int = problem_config_data['max_time'] if 'max_time' in problem_config_data else 5
 
-    shared_test_cases = []
-    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'shared')))/2)):
-        with open(os.path.join(problems_path, problem, 'shared', f"{i+1}.in")) as f_in, \
-                open(os.path.join(problems_path, problem, 'shared', f"{i+1}.ans")) as f_ans:
-            shared_test_cases.append((f_in.read(), f_ans.read()))
-    passes_shared = test_file(input_data, shared_test_cases, max_time)
+    sample_test_cases: list[tuple[str, str]] = []
+    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'sample')))/2)):
+        with open(os.path.join(problems_path, problem, 'data', 'sample', f'{i+1}.in')) as f_in, \
+             open(os.path.join(problems_path, problem, 'data', 'sample', f'{i+1}.ans')) as f_ans:
+            sample_test_cases.append((f_in.read(), f_ans.read()))
+    passes_sample = test_file(input_data, sample_test_cases, max_time)
 
-    secret_test_cases = []
-    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'secret')))/2)):
-        with open(os.path.join(problems_path, problem, 'secret', f"{i+1}.in")) as f_in, \
-             open(os.path.join(problems_path, problem, 'secret', f"{i+1}.ans")) as f_ans:
+    secret_test_cases: list[tuple[str, str]] = []
+    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'secret')))/2)):
+        with open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.in')) as f_in, \
+             open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.ans')) as f_ans:
             secret_test_cases.append((f_in.read(), f_ans.read()))
     passes_secret = test_file(input_data, secret_test_cases, max_time)
 
-    if passes_shared is True and passes_secret is True:
+    if passes_sample is True and passes_secret is True:
         return json.dumps({
-            "Room": ''.join([name for name, uuid in config_data['rooms'].items() if uuid == team_order[team][team_state[team]]]),
-            "shared": passes_shared,
-            "secret": passes_secret
+            'room': ''.join([name for name, uuid in rooms.items() if uuid == team_order[team][team_state[team]]]),
+            'sample': passes_sample,
+            'secret': passes_secret
         })
     else:
         return json.dumps({
-            "shared": passes_shared,
-            "secret": passes_secret
+            'sample': passes_sample,
+            'secret': passes_secret
         })
 
 if __name__ == '__main__':

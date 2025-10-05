@@ -3,3 +3,4 @@ type: pass-fail
 description: "Template Templateson wants to hear his name.\nPrint his name the amount of times he asks you to."
 source: Programmerarens Testamente
 author: IHaveQuestions2010
+max_time: 5

@@ -9,6 +9,16 @@
         @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
         @import url({{ url_for('static', filename='prism.css') }}) layer(prism);
 
+        :root {
+            --background-color-success: green;
+        }
+
+        @media(prefers-color-scheme: dark) {
+            :root {
+                --background-color-success: darkgreen;
+            }
+        }
+
         form > div, #inputData, #highlighting {
             height: 90vh;
             width: 100%;
@@ -73,8 +83,25 @@
         section > code {
             padding: 15px;
             background: #1F1F1F;
+            color: white;
             border-radius: .5em;
             box-shadow: 1px 1px .5em #000 inset;
+        }
+
+        dialog {
+            background-color: var(--background-color);
+            color: var(--on-background-color);
+            border: 0.1em solid var(--on-background-color);
+            border-radius: 0.5em;
+        }
+        dialog#dialog-fail {
+            background-color: var(--background-color-warning);
+        }
+        dialog#dialog-success {
+            background-color: var(--background-color-success);
+        }
+        dialog::backdrop {
+            background-color: #0008;
         }
     </style>
 </head>
@@ -111,18 +138,60 @@ print(myString)
         </form>
     </section>
 
+    <dialog id="dialog-waiting">
+        <h2>Väntar på svar...</h2>
+        <p>Din kod har skickat in och testas. Svar borde komma inom några sekunder...</p>
+    </dialog>
+    <dialog id="dialog-fail">
+        <h2>Tyvärr</h2>
+        <p>
+            Exempeldata: <span class="sample"></span>
+        </p>
+        <p>
+            Dolda testfall: <span class="secret"></span>
+        </p>
+        <button class="close">Stäng</button>
+    </dialog>
+    <dialog id="dialog-success">
+        <h2>Lyckades</h2>
+        <p>
+            <code>Rum: <span></span></code>
+        </p>
+        <button class="close">Stäng</button>
+    </dialog>
+
     <script>
+        const localStorageKeyStoredFile = '{{ competitionName }}-stored-file-{{ problem }}';
+
         const dataFormElem = document.querySelector('#dataForm');
         const inputDataElem = document.querySelector('#inputData');
         const highlightingElem = document.querySelector('#highlighting');
         const highlightingContentElem = document.querySelector('#highlighting-content');
 
-        dataFormElem.addEventListener('submit', function (event) {
+        const dialogWaiting = document.querySelector('#dialog-waiting');
+        const dialogFail = document.querySelector('#dialog-fail');
+        const dialogSuccess = document.querySelector('#dialog-success');
+
+        dataFormElem.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formData = new FormData(event.target);
-            fetch('/api/submit_code', {
+            dialogWaiting.showModal();
+
+            await fetch('/api/submit_code', {
                 method: 'POST',
                 body: formData
+            }).then(async resultJson => {
+                const result = await resultJson.json();
+                dialogWaiting.close();
+
+                if(result.hasOwnProperty('room')) {
+                    dialogSuccess.querySelector('code span').textContent = result.room;
+                    dialogSuccess.showModal();
+                } else {
+                    dialogFail.querySelector('p span.sample').textContent = result.sample ? 'Lyckades' : 'Misslyckades';
+                    dialogFail.querySelector('p span.secret').textContent = result.secret ? 'Lyckades' : 'Misslyckades';
+                    dialogFail.showModal();
+                }
             });
         });
 
@@ -130,12 +199,13 @@ print(myString)
         function update() {
             const result_element = highlightingContentElem;
             let text = inputDataElem.value;
+            localStorage.setItem(localStorageKeyStoredFile, text);
             // Handle final newlines (see article)
-            if(text[text.length-1] == "\n") {
-                text += " ";
+            if(text[text.length-1] == '\n') {
+                text += ' ';
             }
             // Update code
-            result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
+            result_element.innerHTML = text.replace(new RegExp('&', 'g'), '&amp;').replace(new RegExp('<', 'g'), '&lt;'); /* Global RegExp */
             // Syntax Highlight
             Prism.highlightElement(result_element);
         }
@@ -150,13 +220,13 @@ print(myString)
 
         function check_tab(elem, event) {
             const code = elem.value;
-            if(event.key == "Tab") {
+            if(event.key === 'Tab') {
                 /* Tab key pressed */
                 event.preventDefault(); // stop normal
                 const before_tab = code.slice(0, elem.selectionStart); // text before tab
                 const after_tab = code.slice(elem.selectionEnd, elem.value.length); // text after tab
                 const cursor_pos = elem.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
-                elem.value = before_tab + "\t" + after_tab; // add tab char
+                elem.value = before_tab + '\t' + after_tab; // add tab char
                 // move cursor
                 elem.selectionStart = cursor_pos;
                 elem.selectionEnd = cursor_pos;
@@ -184,7 +254,16 @@ print(myString)
             }
         });
 
-        if(inputDataElem.value.length === 0 && highlightingContentElem.textContent.length > 0) {
+        document.querySelectorAll('dialog button.close').forEach(button => {
+            button.addEventListener('click', event => {
+                event.target.closest('dialog').close();
+            });
+        });
+
+        const readOldFile = localStorage.getItem(localStorageKeyStoredFile);
+        if (readOldFile) {
+            inputDataElem.value = readOldFile;
+        } else if (inputDataElem.value.length === 0 && highlightingContentElem.textContent.length > 0) {
             const text = highlightingContentElem.textContent;
             inputDataElem.value = text;
         }

@@ -27,6 +27,12 @@
             color: black;
         }
 
+        td > div {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.7em;
+        }
+
         section code {
             white-space: pre;
         }
@@ -62,10 +68,10 @@
             <tr>
                 <td>{{ team }}</td>
                 {% for problem in problems %}
-                {% if teamState[team] >= loop.index %}
-                <td class="problem completed">Yes</td>
+                {% if teamState[team][loop.index] %}
+                <td class="problem completed"><div>{{ teamState[team][loop.index0] | admin_cell_complete | safe }}</div></td>
                 {% else %}
-                <td class="problem">---</td>
+                <td class="problem"><div>{{ teamState[team][loop.index0] | admin_cell | safe }}</div></td>
                 {% endif %}
                 {% endfor %}
             </tr>

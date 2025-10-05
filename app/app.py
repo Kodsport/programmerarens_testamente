@@ -5,9 +5,11 @@ import random
 import subprocess
 import importlib
 import logging
+import time
 from tempfile import NamedTemporaryFile
 from typing import Any
 from flask import Flask, render_template, url_for, abort, redirect, request, make_response
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ with open(configfile_path, 'r') as config_file:
     random.seed(seed)
 
     if len(rooms.keys()) < (len(problems) - 1):
-        logging.critical(
+        logger.critical(
             'There must be at least as many rooms as there are problems')
         exit(1)
 
@@ -59,44 +61,44 @@ with open(configfile_path, 'r') as config_file:
     uuids = list(rooms.values())
 
 if not isinstance(competition_name, str):
-    logging.critical('Config entry "competition-name" must be of type string')
+    logger.critical('Config entry "competition-name" must be of type string')
     exit(1)
 if not isinstance(teams, list):
-    logging.critical('Config entry "teams" must be list of type list')
+    logger.critical('Config entry "teams" must be list of type list')
     exit(1)
 if len(teams) <= 0:
-    logging.critical('Config entry "teams" contain at least one element')
+    logger.critical('Config entry "teams" contain at least one element')
     exit(1)
 if any([not isinstance(team, str) for team in teams]):
-    logging.critical('Config entry "teams" elements must be of type string')
+    logger.critical('Config entry "teams" elements must be of type string')
     exit(1)
 if len(set(rooms.keys())) != len(rooms):
-    logging.critical('Config entry "rooms" must have unique room names')
+    logger.critical('Config entry "rooms" must have unique room names')
     exit(1)
 if len(set(rooms.values())) != len(rooms):
-    logging.critical('Config entry "rooms" must have unique uuids')
+    logger.critical('Config entry "rooms" must have unique uuids')
     exit(1)
 if len(set(rooms.keys()).intersection(set(unused_rooms))) > 0:
-    logging.critical(
+    logger.critical(
         'Config entry "unused_rooms" must only contain unused rooms')
     exit(1)
 if len(final_room) != 1:
-    logging.critical('Config entry "final_room" must contain exactly one room')
+    logger.critical('Config entry "final_room" must contain exactly one room')
     exit(1)
 if len(set(unused_rooms)) != len(unused_rooms):
-    logging.critical('Config entry "unused_rooms" must have unique room names')
+    logger.critical('Config entry "unused_rooms" must have unique room names')
     exit(1)
 if len(set(problems)) != len(problems):
-    logging.critical('Config entry "problems" must have unique problems')
+    logger.critical('Config entry "problems" must have unique problems')
     exit(1)
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
-        team_state: dict[str, int] = json.loads(statefile.read())
+        team_state: dict[str, list[dict[str, int]]] = json.loads(statefile.read())
 else:
     team_state = {}
     for team in teams:
-        team_state[team] = 0
+        team_state[team] = [{'timestamp': 0, 'attempts': 0}]
     del team
 
 # Validate team_state
@@ -126,6 +128,7 @@ def isAdmin():
         return False
     if userAuth.parameters.get('password', '') != admin_password:
         return False
+    logger.info(f'Admin access granted: {userAuth = }')
     return True
 
 
@@ -165,10 +168,10 @@ def hello():
 
     team = request.cookies.get('team')
 
-    if (team_state[team] >= len(problems)):
+    if ((len(team_state[team]) - 1) >= len(problems)):
         return 'Slut'
 
-    problem = problems[team_state[team]]
+    problem = problems[len(team_state[team]) - 1]
     if isAdmin() and 'problem' in request.args:
         problem = request.args['problem']
 
@@ -182,7 +185,7 @@ def hello():
         problemModule = importlib.import_module(
             f'problems.{problems[problems.index(problem)]}.generate',
             package=None)
-        roomUuid: str = team_order[team][team_state[team]]
+        roomUuid: str = team_order[team][len(team_state[team]) - 1]
         correctRoom: str = next(
             room for room in rooms if rooms[room] == roomUuid)
         return problemModule.generateCode(correctRoom, unused_rooms)
@@ -240,7 +243,6 @@ def hello():
 
 @app.route('/login')
 def login():
-    logger.debug(teams)
     return render_template('login.html', competitionName=competition_name,
                            teams=teams)
 
@@ -255,18 +257,19 @@ def qr():
     if not code_id or code_id not in uuids:
         return abort(400, 'Invalid ID')
 
-    # logger.debug(f'{team_order[team][team_state[team]] = }')
-    logger.debug(f'{team=}')
+    # logger.debug(f'{team_order[team][len(team_state[team]) - 1] = }')
+    # logger.debug(f'{team=}')
     # logger.debug(f'{team_order[team] = }')
-    # logger.debug(f'{team_state[team] = }')
-    logger.debug(
-        f'Expected ID: {team_order[team][team_state[team]]}\
-        . Code ID: {code_id}')
+    # logger.debug(f'{len(team_state[team]) - 1 = }')
+    # logger.debug(
+    #     f'Expected ID: {team_order[team][len(team_state[team]) - 1]}\
+    #     . Code ID: {code_id}')
 
-    if team_order[team][team_state[team]] != code_id:
+    if team_order[team][len(team_state[team]) - 1] != code_id:
         return abort(400, 'Fel QR!')
 
-    team_state[team] += 1
+    team_state[team][-1]['timestamp'] = int(time.time())
+    team_state[team].append({'timestamp': 0, 'attempts': 0})
     storeState()
 
     return redirect('/')
@@ -331,6 +334,18 @@ def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
         # Just pretend to do test
         return random.choice([True, False])
 
+@app.template_filter('admin_cell_complete')
+def admin_cell_complete(state):
+    timestamp = int(state['timestamp'])
+    attempts = int(state['attempts'])
+    dt = datetime.fromtimestamp(timestamp)
+    timestring = dt.isoformat() if timestamp > 0 else '---'
+    return f'<time datetime="{timestring}">{timestring}</time><span>Attempts: {attempts}</span>'
+
+@app.template_filter('admin_cell')
+def admin_cell(state):
+    if not state: return '---'
+    return admin_cell_complete(state)
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit():
@@ -339,11 +354,15 @@ def submit():
         return json.dumps(('error', 'No file input!')), 400
 
     team = request.cookies.get('team')
-    if team_state[team] >= len(problems):
+    if (len(team_state[team]) - 1) >= len(problems):
         return json.dumps(
             ('error', 'No more problems available for this team')), 400
 
-    problem = problems[team_state[team]]
+    team_state[team][-1]['timestamp'] = int(time.time())
+    team_state[team][-1]['attempts'] += 1
+    storeState()
+
+    problem = problems[len(team_state[team]) - 1]
 
     with open(os.path.join(
             problems_path, problem, 'problem.yaml')) as config_file:
@@ -352,7 +371,7 @@ def submit():
         problem_type: str = problem_config_data['type']
 
     for name, uuid in rooms.items():
-        if uuid == team_order[team][team_state[team]]:
+        if uuid == team_order[team][len(team_state[team]) - 1]:
             next_room = ''.join(name)
 
     match problem_type:

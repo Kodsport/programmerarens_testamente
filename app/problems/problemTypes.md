@@ -15,7 +15,7 @@ Example: deladChoklad
 
 Problem has code, shown to user in a non-copyable way.
 
-Needs to have a `generate.py` with the function `generateCode()`
+Needs to have a `generate.py` with the function `generateCode(room: str, unusedRooms: list[str])`
 
 Next location *is* the answer.
 
@@ -27,7 +27,7 @@ Question in text form.
 
 Next location *is* the answer.
 
-Needs to have a `generate.py` with the function `generateCode()`
+Needs to have a `generate.py` with the function `generateCode(room: str, unusedRooms: list[str])`
 
 Example: caesarchiffer
 

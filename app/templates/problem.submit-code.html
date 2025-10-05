@@ -86,6 +86,12 @@
             color: white;
             border-radius: .5em;
             box-shadow: 1px 1px .5em #000 inset;
+            white-space: pre;
+            display: block;
+        }
+
+        button {
+            padding: 0.5em 1em;
         }
 
         dialog {
@@ -109,13 +115,16 @@
     <h1>{{ data['name'] }}</h1>
     <p class="text">{{ data['description'] }}</p>
 
-    <section>
-        <h2>Input</h2>
-        <code>{{ input }}</code>
-    </section>
-    <section>
-        <h2>Output</h2>
-        <code>{{ output }}</code>
+    <section id="samples">
+    {% for sample in samples %}
+        <p>
+            <h2>Testfall {{ loop.index }}</h2>
+            <h3>Input</h3>
+            <code>{{ sample[0] }}</code>
+            <h3>Output</h3>
+            <code>{{ sample[1] }}</code>
+        </p>
+    {% endfor %}
     </section>
 
     <section id="code">
@@ -180,9 +189,14 @@ print(myString)
             await fetch('/api/submit_code', {
                 method: 'POST',
                 body: formData
-            }).then(async resultJson => {
-                const result = await resultJson.json();
+            }).then(async response => {
                 dialogWaiting.close();
+                if(!response.ok) {
+                    console.error(response);
+                    alert('Ett fel uppstod när koden skickades in');
+                    return;
+                }
+                const result = await response.json();
 
                 if(result.hasOwnProperty('room')) {
                     dialogSuccess.querySelector('code span').textContent = result.room;
@@ -192,6 +206,8 @@ print(myString)
                     dialogFail.querySelector('p span.secret').textContent = result.secret ? 'Lyckades' : 'Misslyckades';
                     dialogFail.showModal();
                 }
+            }).catch(async error => {
+                console.error(error);
             });
         });
 

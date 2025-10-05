@@ -9,6 +9,9 @@
 
         table {
             border-collapse: collapse;
+            display: block;
+            max-width: 100%;
+            overflow: scroll;
         }
 
         td, th {
@@ -69,7 +72,7 @@
         <h2>Problems</h2>
         <ol>
             {%for problem in problems%}
-            <li>{{ problem }}</li>
+            <li>{{ problem }} <a href="/?problem={{ problem }}">preview-länk</a></li>
             {%endfor%}
         </ol>
     </section>
@@ -77,7 +80,7 @@
         <h2>Rooms</h2>
         <ul>
             {%for room in rooms%}
-            <li title="{{ rooms[room] }}">{{ room }}</li>
+            <li title="{{ rooms[room] }}">{{ room }} <a href="/qr?id={{ rooms[room] }}">QR-länk</a></li>
             {%endfor%}
         </ul>
     </section>

@@ -1,5 +1,5 @@
 name: Siffersumma
 type: pass-fail
-description: Du får ett tal som indata och din uppgift är att beräkna siffersumman av detta tal!
+description: Beräkna siffersumman. Indatan består av ett tal. Beräkna dess siffersumma. Beräkna därefter siffersumman från det svaret, och så vidare, tills svaret blir ett tal 0 <= n <= 9.
 source: Programmeringsläger för Nybörjare 2025
 author: Jackryd

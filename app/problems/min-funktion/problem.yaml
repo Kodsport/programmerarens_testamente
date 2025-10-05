@@ -1,5 +1,5 @@
 name: Min-funktion
 type: pass-fail
-description: Indatan är en lista bestående av siffror, skriv den minsta!
+description: Skriv ut det minsta talet av alla tal i indatan. Första raden består av ett tal N som anger antalet tal som kommer. Därefter följer N rader med heltal.
 source: Programmeringsläger för Nybörjare 2025
 author: Jackryd

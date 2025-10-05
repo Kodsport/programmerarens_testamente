@@ -6,19 +6,38 @@ teams:
   - CD
   - MP3
 rooms:
+  room0: e78cff51-73df-40fa-aff4-44c181da04c4
   room1: 2f3534f0-ff45-434d-8124-77258f40161d
   room2: 2366e98a-f8b4-4938-8e99-9048a175f60f
   room3: e6403ee6-6fe1-4e36-9a09-41e99fc2a1b1
   room4: 7b9f1d4b-b96d-4ea6-8c82-de2ebeed74d0
   room5: 3b54d4a7-4e61-423e-974c-4d69457e5379
+  room6: 8257c3a0-1f7b-4a8a-befe-d9d12dce95fc
+  room7: 9e2a709a-3367-41f4-8bd5-c6b3b6fb99fb
+  room8: 0044e666-8bd1-4940-942d-3b8b68e5f460
+  room9: 3fdcc850-24d3-4d09-bec8-2dccd9cdfc2e
+  room10: a39a6f4f-01e6-4bf0-9b9e-4d1c2fd94a1d
+  room11: 5e5547aa-dc06-45ae-b816-2f3a1a49cd73
+  room12: 08f43fe7-fadc-4c25-9530-f78afd37fb35
+final-room:
+  room13: 974a384e-f297-4449-aa51-e14739e1bbb8
 unused-rooms:
-  - room6
-  - room7
-  - room8
-  - room9
+  - room14
+  - room15
+  - room16
+  - room17
+  - room18
+  - room19
 problems:
   - template
   - minMax
   - ifNotNotNot
   - bananabread
   - deladChoklad
+  - reverseString
+  - max-funktion
+  - sortByKey
+  - caesarchiffer
+  - min-funktion
+  - siffersumma
+  - sortering

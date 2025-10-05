@@ -28,15 +28,59 @@ with open(configfile_path, 'r') as config_file:
     config_data: dict[str, Any] = yaml.load(config_file, yaml.Loader)
     logger.info(f'{config_data = }')
 
-    problems: list = config_data['problems']
+    seed: str = config_data['seed']
+    competition_name: str = config_data['competition-name']
     teams: list = config_data['teams']
     rooms: dict[str, str] = config_data['rooms']
-    unusedRooms: list[str] = config_data['unused-rooms']
-    competition_name: str = config_data['competition-name']
-    seed: str = config_data['seed']
+    final_room: dict[str] = config_data['final-room']
+    unused_rooms: list[str] = config_data['unused-rooms']
+    problems: list = config_data['problems']
+
+    random.seed(seed)
+
+    if len(rooms.keys()) < (len(problems) - 1):
+        logging.critical('There must be at least as many rooms as there are problems')
+        exit(1)
+
+    team_order = {}
+    for team in teams:
+        team_order.update({team: random.sample(list(rooms.values()), len(problems) - 1) + [list(final_room.values())[0]]})
+    del team
+
+    rooms[list(final_room.keys())[0]] = list(final_room.values())[0]
 
     uuids = list(rooms.values())
-    random.seed(seed)
+
+if type(competition_name) != type(''):
+    logging.critical('Config entry "competition-name" must be of type string')
+    exit(1)
+if type(teams) != type([]):
+    logging.critical('Config entry "teams" must be list of type list')
+    exit(1)
+if len(teams) <= 0:
+    logging.critical('Config entry "teams" contain at least one element')
+    exit(1)
+if any([type(team) != type('') for team in teams]):
+    logging.critical('Config entry "teams" elements must be of type string')
+    exit(1)
+if len(set(rooms.keys())) != len(rooms):
+    logging.critical('Config entry "rooms" must have unique room names')
+    exit(1)
+if len(set(rooms.values())) != len(rooms):
+    logging.critical('Config entry "rooms" must have unique uuids')
+    exit(1)
+if len(set(rooms.keys()).intersection(set(unused_rooms))) > 0:
+    logging.critical('Config entry "unused_rooms" must only contain unused rooms')
+    exit(1)
+if len(final_room) != 1:
+    logging.critical('Config entry "final_room" must contain exactly one room')
+    exit(1)
+if len(set(unused_rooms)) != len(unused_rooms):
+    logging.critical('Config entry "unused_rooms" must have unique room names')
+    exit(1)
+if len(set(problems)) != len(problems):
+    logging.critical('Config entry "problems" must have unique problems')
+    exit(1)
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
@@ -50,19 +94,14 @@ else:
 # Validate team_state
 if len(set(team_state.keys())) != len(team_state):
     logger.critical(f'File "{statefile_path}" contains duplicate teams')
-    exit()
+    exit(1)
 if set(team_state.keys()) != set(teams):
     logger.critical(f'File "{statefile_path}" does not contain all teams')
-    exit()
+    exit(1)
 
 def storeState():
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
-
-team_order = {}
-for team in teams:
-    team_order.update({team: random.sample(uuids, len(problems))})
-del team
 
 @app.route('/')
 def hello():
@@ -72,6 +111,10 @@ def hello():
         return redirect(url_for('login'), code=307)
 
     team = request.cookies.get('team')
+
+    if(team_state[team] >= len(problems)):
+        return 'Slut'
+
     problem = problems[team_state[team]]
     if 'problem' in request.args:
         problem = request.args['problem']
@@ -85,7 +128,7 @@ def hello():
         problemModule = importlib.import_module(f'problems.{problems[problems.index(problem)]}.generate', package=None)
         roomUuid: str = team_order[team][team_state[team]]
         correctRoom: str = next(room for room in rooms if rooms[room] == roomUuid)
-        return problemModule.generateCode(correctRoom, unusedRooms)
+        return problemModule.generateCode(correctRoom, unused_rooms)
 
     match problem_type:
         case 'pt_what-is-code-doing':
@@ -105,17 +148,18 @@ def hello():
                                     code=code)
 
         case 'pass-fail':
-            with open(os.path.join(problems_path, problem, 'data', 'sample', '1.in'), 'r') as in_file:
-                input_data = in_file.read()
-            with open(os.path.join(problems_path, problem, 'data', 'sample', '1.ans'), 'r') as out_file:
-                output_data = out_file.read()
+            test_cases = set([file.split('.')[0] for file in os.listdir(os.path.join(problems_path, problem, 'data', 'sample'))])
+            samples: list[tuple[str, str]] = []
+            for test_case in test_cases:
+                with open(os.path.join(problems_path, problem, 'data', 'sample', f'{test_case}.in'), 'r') as in_file,\
+                     open(os.path.join(problems_path, problem, 'data', 'sample', f'{test_case}.ans'), 'r') as out_file:
+                    samples.append((in_file.read(), out_file.read()))
 
             return render_template('problem.submit-code.html',
                                     competitionName=competition_name,
                                     problem=problem,
                                     data=problem_data,
-                                    input=input_data,
-                                    output=output_data)
+                                    samples=samples)
 
         case 'pt_input-text':
             return render_template('problem.submit-text.html',
@@ -167,6 +211,8 @@ def qr():
     return redirect('/')
 
 def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
+    if not test_cases: return True
+
     if True: # Just pretend to do test
         with NamedTemporaryFile(delete=False,
                                 dir=os.path.join(chrootdir_path, 'tmp'),
@@ -245,10 +291,11 @@ def submit():
     passes_sample = test_file(input_data, sample_test_cases, max_time)
 
     secret_test_cases: list[tuple[str, str]] = []
-    for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'secret')))/2)):
-        with open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.in')) as f_in, \
-             open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.ans')) as f_ans:
-            secret_test_cases.append((f_in.read(), f_ans.read()))
+    if os.path.exists(os.path.join(problems_path, problem, 'data', 'secret')):
+        for i in range(int(len(os.listdir(os.path.join(problems_path, problem, 'data', 'secret')))/2)):
+            with open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.in')) as f_in, \
+                open(os.path.join(problems_path, problem, 'data', 'secret', f'{i+1}.ans')) as f_ans:
+                secret_test_cases.append((f_in.read(), f_ans.read()))
     passes_secret = test_file(input_data, secret_test_cases, max_time)
 
     if passes_sample is True and passes_secret is True:

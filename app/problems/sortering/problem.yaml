@@ -1,5 +1,5 @@
 name: Sortering
 type: pass-fail
-description: Implementera en sorteringsalgoritm och sortera våra listor
+description: Implementera en sorteringsalgoritm och sortera våra listor. Skriv ut hela listan, t.ex. med print(minLista). Första raden består av ett tal N som anger antalet tal som kommer. Därefter följer N rader med heltal.
 source: Programmeringsläger för Nybörjare 2025
 author: Jackryd

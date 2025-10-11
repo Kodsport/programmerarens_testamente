@@ -94,7 +94,8 @@ if len(set(problems)) != len(problems):
 
 if os.path.exists(statefile_path):
     with open(statefile_path) as statefile:
-        team_state: dict[str, list[dict[str, int]]] = json.loads(statefile.read())
+        team_state: dict[str, list[dict[str, int]]
+                         ] = json.loads(statefile.read())
 else:
     team_state = {}
     for team in teams:
@@ -114,9 +115,11 @@ def storeState():
     with open(statefile_path, 'w') as statefile:
         statefile.write(json.dumps(team_state, indent=4))
 
+
 @app.template_filter('to_room')
 def to_room(uuid):
     return next(room for room in rooms if rooms[room] == uuid)
+
 
 def isAdmin():
     if not admin_password:
@@ -131,7 +134,7 @@ def isAdmin():
         return False
     if userAuth.parameters.get('password', '') != admin_password:
         return False
-    logger.info(f'Admin access granted: {userAuth = }')
+    logger.info(f'Admin access granted: {userAuth=}')
     return True
 
 
@@ -343,6 +346,7 @@ def test_file(file_data, test_cases: list[tuple[str, str]], max_time: int):
         # Just pretend to do test
         return random.choice([True, False])
 
+
 @app.template_filter('admin_cell_complete')
 def admin_cell_complete(state):
     timestamp = int(state['timestamp'])
@@ -351,10 +355,13 @@ def admin_cell_complete(state):
     timestring = dt.isoformat() if timestamp > 0 else '---'
     return f'<time datetime="{timestring}">{timestring}</time><span>Attempts: {attempts}</span>'
 
+
 @app.template_filter('admin_cell')
 def admin_cell(state):
-    if not state: return '---'
+    if not state:
+        return '---'
     return admin_cell_complete(state)
+
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit():

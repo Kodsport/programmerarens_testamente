@@ -7,11 +7,17 @@
     <style>
         @import url({{ url_for('static', filename='toolstyle.css') }}) layer(toolstyle);
 
+        body {
+            margin: 8px;
+        }
+
         table {
             border-collapse: collapse;
             display: block;
             max-width: 100%;
             overflow: scroll;
+            margin: 0 -8px;
+            padding: 0 8px;
         }
 
         td, th {
